@@ -1,0 +1,530 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Cadastros · Clientes (rede)</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3;
+    --warn:#B7791F; --warn-tint:#F6EEDC; --warn-line:#E6D4A8;
+    --gas:#CE8A2C; --adit:#9C6B14; --etanol:#2E9E6B; --diesel:#1B6E8C;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1220px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .fleet{display:flex; gap:20px}
+  .fleet .f{text-align:right}
+  .fleet .f .v{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; line-height:1.1}
+  .fleet .f .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .fleet .f.warn .v{color:var(--warn)}
+  .fleet .f.bad .v{color:var(--bad)}
+  @media(max-width:820px){ .fleet{display:none} }
+
+  .shell{display:grid; grid-template-columns:360px 1fr; min-height:600px}
+  @media(max-width:860px){ .shell{grid-template-columns:1fr} }
+
+  /* left: client list */
+  .list{border-right:1px solid var(--line); background:var(--surface-2); display:flex; flex-direction:column; max-height:820px}
+  .tools{padding:14px 14px 10px; border-bottom:1px solid var(--line)}
+  .search{position:relative; margin-bottom:10px}
+  .search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--faint)}
+  .search input{width:100%; font-family:inherit; font-size:13.5px; padding:9px 12px 9px 34px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink)}
+  .search input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{font-family:inherit; font-size:11px; font-weight:650; padding:5px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer}
+  .chip:hover{border-color:var(--brand)}
+  .chip.on{background:var(--brand); border-color:var(--brand); color:#fff}
+  .chip.bad{color:var(--bad)}
+  .chip.bad.on{background:var(--bad); border-color:var(--bad); color:#fff}
+  .chip:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .lcount{padding:8px 16px 4px; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .rows{flex:1; overflow-y:auto; padding:4px 8px 12px}
+  .prow{width:100%; display:flex; align-items:center; gap:10px; border:0; background:transparent; font-family:inherit; padding:10px 10px; border-radius:10px; cursor:pointer; text-align:left; transition:.12s}
+  .prow:hover{background:#e7ebf5}
+  .prow[aria-current="true"]{background:var(--brand)}
+  .prow[aria-current="true"] b, .prow[aria-current="true"] .cts{color:#fff}
+  .prow[aria-current="true"] small{color:rgba(255,255,255,.72)}
+  .prow .st{width:8px; height:8px; border-radius:50%; flex:none}
+  .prow .in{flex:1; min-width:0}
+  .prow b{display:block; font-size:13px; font-weight:600; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3}
+  .prow small{font-size:10.5px; color:var(--faint)}
+  .prow .cts{font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600}
+  .prow:focus-visible{outline:2px solid var(--brand); outline-offset:-2px}
+
+  /* right: detail */
+  .detail{padding:22px 24px; overflow-y:auto; max-height:820px}
+  .crumb{font-size:11.5px; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .detail h1{margin:0 0 2px; font-size:20px; font-weight:660; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px}
+  .pill .pip{width:6px; height:6px; border-radius:50%; background:currentColor}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.bad{color:var(--bad); background:var(--bad-tint)}
+  .pill.gray{color:var(--muted); background:var(--surface-2)}
+  .pill.brand{color:var(--brand-ink); background:var(--brand-tint)}
+  .lead{font-size:12.5px; color:var(--muted); margin:0 0 14px}
+  .pendbox{display:flex; gap:12px; align-items:center; border:1px solid #E7B9B0; background:var(--bad-tint); border-radius:12px; padding:11px 14px; margin-bottom:14px}
+  .pendbox svg{width:18px; height:18px; color:var(--bad); flex:none}
+  .pendbox b{font-size:13px; font-weight:650}
+  .pendbox span{font-size:11.5px; color:var(--muted); display:block}
+  .pendbox button{margin-left:auto; font-family:inherit; font-size:11.5px; font-weight:650; padding:7px 13px; border-radius:9px; border:1px solid var(--brand); background:#fff; color:var(--brand-ink); cursor:pointer; white-space:nowrap}
+  .pendbox button:hover{background:var(--brand-tint)}
+  .pendbox.warn{border-color:var(--warn-line); background:var(--warn-tint)}
+  .pendbox.warn svg{color:var(--warn)}
+
+  .props{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px}
+  @media(max-width:760px){ .props{grid-template-columns:repeat(2,1fr)} }
+  .prop{border:1px solid var(--line); border-radius:12px; padding:11px 13px; background:var(--surface-2)}
+  .prop .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .prop .v{font-size:13px; font-weight:640; margin-top:2px}
+  .prop .v small{font-weight:500; color:var(--muted); font-size:11px}
+  .prop.warn{border-color:var(--warn-line); background:var(--warn-tint)}
+  .prop.wide{grid-column:span 3}
+  @media(max-width:760px){ .prop.wide{grid-column:span 2} }
+
+  /* credit bar */
+  .credit{margin-top:8px}
+  .credit .barwrap{height:12px; border-radius:6px; background:#E2E6F0; overflow:hidden; margin:7px 0 6px}
+  .credit .bar{height:100%; border-radius:6px; background:var(--brand); transition:width .25s ease; width:0}
+  .credit .bar.hot{background:var(--bad)}
+  .credit .bar.warn{background:var(--warn)}
+  .credit .lg{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .credit .edit{display:flex; align-items:center; gap:8px; margin-top:10px}
+  .credit .edit label{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .credit .edit .inp{position:relative}
+  .credit .edit .inp span{position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--faint); font-weight:600}
+  .credit .edit input{width:130px; font-family:inherit; font-size:13px; font-weight:640; padding:7px 10px 7px 30px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); font-variant-numeric:tabular-nums}
+  .credit .edit input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+  .credit .edit button{font-family:inherit; font-size:11.5px; font-weight:650; padding:7px 13px; border-radius:9px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer}
+  .credit .edit button:hover{filter:brightness(.96)}
+
+  .rel{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:12px}
+  .rel .rh{padding:10px 14px 8px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); border-bottom:1px solid var(--line-2); background:#fff; display:flex; justify-content:space-between}
+  .rel .rh span{color:var(--faint); font-weight:600; text-transform:none; letter-spacing:0}
+  .rel .rr{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line-2); font-size:12.5px; background:#fff; flex-wrap:wrap}
+  .rel .rr:last-child{border-bottom:0}
+  .rel .rr .plate{font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:2px 8px; flex:none}
+  .rel .rr b{font-weight:600}
+  .rel .rr .r{margin-left:auto; color:var(--muted); font-size:11.5px; font-variant-numeric:tabular-nums}
+
+  .stbl{width:100%; border-collapse:collapse; font-size:12.5px; background:#fff}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:8px 14px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:10px 14px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .finkpis{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px}
+  @media(max-width:760px){ .finkpis{grid-template-columns:1fr} }
+  .finkpi{border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:#fff}
+  .finkpi .k{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .finkpi .v{font-size:19px; font-weight:680; letter-spacing:-.02em; margin-top:3px}
+  .finkpi.neg .v{color:var(--bad)}
+
+  .audit{font-size:11px; color:var(--faint); margin-top:14px; padding-top:12px; border-top:1px solid var(--line-2)}
+  .audit b{color:var(--muted); font-weight:600}
+
+  /* toast */
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:12px 18px; border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; align-items:center; gap:9px; opacity:0; pointer-events:none; transition:.28s; z-index:20}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast svg{width:17px; height:17px; color:#61E0A0}
+
+  .caption{max-width:1220px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+
+  @media(prefers-reduced-motion:reduce){
+    .credit .bar,.toast{transition:none}
+  }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Cadastros · clientes</span></div>
+    </div>
+    <div class="fleet" id="fleet"></div>
+  </div>
+
+  <div class="shell">
+    <div class="list">
+      <div class="tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="search" placeholder="Buscar cliente, CNPJ/CPF, placa…" aria-label="Buscar cliente">
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="lcount" id="lcount"></div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <div class="detail" id="detail"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg><span id="toast-msg"></span></div>
+
+<p class="caption">Protótipo Helix Fuel · Cadastro de clientes em escala de rede (246 clientes). &nbsp;<b>Cobre: limite de crédito e bloqueio de inadimplentes, inativação automática por 90 dias sem consumo, consumo por placa (frota) e base do faturamento / condição de pagamento.</b></p>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const BRL=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const money=v=>BRL.format(v);
+  const money2=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
+  const HOJE=new Date(2026,6,8); // 08/07/2026
+  const daysAgo=d=>{ const x=new Date(HOJE); x.setDate(x.getDate()-d); return x.toLocaleDateString('pt-BR'); };
+
+  const PRACAS=['Sorocaba','Centro-Oeste','Norte','Noroeste','Campinas'];
+  const FIRST=['Transportes','Agro','Viação','Construtora','Frota','Log','Expresso','Terraplenagem','Cooperativa','Distribuidora','Rodo','Auto','Mineradora','Usina','Serra','Comercial','Trans','Grãos','Transporte','Colheita'];
+  const LAST=['Rodovale','Boituva','Cerquilho','Tatuí','Paulista','do Vale','Sul','Oeste','Bandeirantes','Ipê','Real','União','Progresso','Central','Interior','Planalto','Horizonte','Ouro','Primavera','São Jorge','Vera Cruz','Santa Fé','Diamante','Nascente','Tietê','Ponte Alta','Boa Vista','Cristal','Guaçu','Aliança'];
+  const CIDADES=['Tatuí','Cerquilho','Boituva','Sorocaba','Itapetininga','Botucatu','Bauru','Rio Preto','Araçatuba','Marília','Piracicaba','Campinas','Jundiaí','Ourinhos','Assis'];
+  const PF_NAMES=['João','Maria','Carlos','Ana','Pedro','Lucia','Marcos','Fernanda','Roberto','Juliana','Paulo','Sandra','Rafael','Beatriz','Antônio','Cláudia'];
+  const PF_SOBRE=['Silva','Souza','Oliveira','Santos','Pereira','Costa','Rodrigues','Almeida','Nascimento','Lima','Araújo','Ferreira','Barbosa','Ribeiro','Gomes'];
+
+  // deterministic LCG
+  let s=246; const rnd=()=> (s=(s*1103515245+12345)%2147483648)/2147483648;
+
+  const CLIENTS=[];
+
+  // ---- clientes fixos (conectam com o PDV faturado) ----
+  CLIENTS.push({
+    fixed:true, nome:'Transportes Rodovale', tipo:'Frota/Convênio', pj:true, praca:'Sorocaba', cidade:'Tatuí',
+    doc:'18.442.309/0001-72', ie:'688.114.220.331', contato:'Elaine Rodrigues', fone:'(15) 3251-4400',
+    cond:'Faturado quinzenal · vencimento dia 12', limite:70000, usado:48210,
+    status:'ok', lastBuy:2, frota:true, nplacas:28, prefix:'FROTA',
+    aberto:48210, vencido:0, motivo:null
+  });
+  CLIENTS.push({
+    fixed:true, nome:'Agro Boituva Máquinas', tipo:'Frota/Convênio', pj:true, praca:'Sorocaba', cidade:'Boituva',
+    doc:'24.910.556/0001-08', ie:'339.552.108.774', contato:'Sérgio Menezes', fone:'(15) 3363-2210',
+    cond:'Faturado quinzenal · vencimento dia 15', limite:40000, usado:22870,
+    status:'ok', lastBuy:5, frota:true, nplacas:9, prefix:'AGRO',
+    aberto:22870, vencido:0, motivo:null
+  });
+  CLIENTS.push({
+    fixed:true, nome:'Prefeitura de Tatuí', tipo:'Convênio (órgão público)', pj:true, praca:'Sorocaba', cidade:'Tatuí',
+    doc:'46.634.564/0001-25', ie:'ISENTO', contato:'Setor de Empenhos', fone:'(15) 3251-9000',
+    cond:'Empenho 2210/26 · faturado mensal', limite:30000, usado:9640,
+    status:'bad', lastBuy:11, frota:true, nplacas:14, prefix:'GOV',
+    aberto:9640, vencido:9640, motivo:'fatura vencida há 9 dias · empenho 2210/26 sem liquidação'
+  });
+  CLIENTS.push({
+    fixed:true, nome:'Viação Cerquilho', tipo:'Frota/Convênio', pj:true, praca:'Sorocaba', cidade:'Cerquilho',
+    doc:'31.208.771/0001-49', ie:'445.220.669.100', contato:'Depto. Frota', fone:'(15) 3384-1177',
+    cond:'Faturado semanal · vencimento sexta', limite:25000, usado:18120,
+    status:'bad', lastBuy:6, frota:true, nplacas:11, prefix:'ONI',
+    aberto:18120, vencido:3220, motivo:'fatura vencida há 6 dias · 2 boletos em aberto'
+  });
+  // cliente prestes a inativar (85 dias sem compra)
+  CLIENTS.push({
+    fixed:true, nome:'Terraplenagem Santa Fé', tipo:'Frota/Convênio', pj:true, praca:'Centro-Oeste', cidade:'Botucatu',
+    doc:'52.771.004/0001-63', ie:'220.774.551.009', contato:'Marcos Prado', fone:'(14) 3812-7788',
+    cond:'Faturado quinzenal · vencimento dia 20', limite:35000, usado:0,
+    status:'ok', lastBuy:85, frota:true, nplacas:7, prefix:'TERRA',
+    aberto:0, vencido:0, motivo:null
+  });
+
+  // ---- restante gerado ate 246 ----
+  const TOTAL=246;
+  for(let i=CLIENTS.length; i<TOTAL; i++){
+    const r=rnd();
+    const isPF = r<0.34;
+    const praca=PRACAS[Math.floor(rnd()*5)];
+    const cidade=CIDADES[Math.floor(rnd()*CIDADES.length)];
+    // status: ~6% inadimplentes, ~7% inativos, resto em dia
+    const rs=rnd();
+    let status = rs<0.06 ? 'bad' : (rs<0.13 ? 'inativo' : 'ok');
+    const lastBuy = status==='inativo' ? 95+Math.floor(rnd()*180)
+                  : status==='bad' ? Math.floor(rnd()*20)
+                  : Math.floor(rnd()*45);
+    if(isPF){
+      const nome=PF_NAMES[Math.floor(rnd()*PF_NAMES.length)]+' '+PF_SOBRE[Math.floor(rnd()*PF_SOBRE.length)]+' '+PF_SOBRE[Math.floor(rnd()*PF_SOBRE.length)];
+      const cpfn=Math.floor(rnd()*899+100);
+      const limite=[0,500,800,1000][Math.floor(rnd()*4)];
+      const usado=limite? Math.floor(rnd()*limite):0;
+      CLIENTS.push({
+        nome, tipo:'PF varejo', pj:false, pf:true, praca, cidade,
+        doc:`${cpfn}.${Math.floor(rnd()*899+100)}.${Math.floor(rnd()*899+100)}-${String(Math.floor(rnd()*89+10))}`,
+        ie:'—', contato:nome, fone:`(1${Math.floor(rnd()*5+4)}) 9${Math.floor(rnd()*8999+1000)}-${Math.floor(rnd()*8999+1000)}`,
+        cond: limite? 'Crédito próprio · vencimento 30 dias':'À vista (sem faturamento)',
+        limite, usado, status: limite?status:'ok', lastBuy, frota:false, nplacas:0,
+        aberto:usado, vencido: status==='bad'? usado : 0,
+        motivo: status==='bad'? `parcela vencida há ${lastBuy||3} dias`:null
+      });
+    } else {
+      const nome=FIRST[Math.floor(rnd()*FIRST.length)]+' '+LAST[Math.floor(rnd()*LAST.length)];
+      const limite=[15000,20000,25000,30000,40000,50000,60000,80000][Math.floor(rnd()*8)];
+      const usado=Math.floor(rnd()*limite*0.92);
+      const isFrota=rnd()<0.7;
+      const nplacas=isFrota? 3+Math.floor(rnd()*40):0;
+      CLIENTS.push({
+        nome, tipo:'Frota/Convênio', pj:true, praca, cidade,
+        doc:`${String(Math.floor(rnd()*89+10))}.${Math.floor(rnd()*899+100)}.${Math.floor(rnd()*899+100)}/0001-${String(Math.floor(rnd()*89+10))}`,
+        ie:`${Math.floor(rnd()*899+100)}.${Math.floor(rnd()*899+100)}.${Math.floor(rnd()*899+100)}.${Math.floor(rnd()*899+100)}`,
+        contato:['Depto. Financeiro','Compras','Gestor de Frota','Diretoria'][Math.floor(rnd()*4)],
+        fone:`(1${Math.floor(rnd()*5+4)}) 3${Math.floor(rnd()*899+100)}-${Math.floor(rnd()*8999+1000)}`,
+        cond:['Faturado quinzenal · vencimento dia 12','Faturado mensal · vencimento dia 5','Faturado semanal · vencimento sexta','Faturado quinzenal · vencimento dia 20'][Math.floor(rnd()*4)],
+        limite, usado, status, lastBuy, frota:isFrota, nplacas,
+        prefix:'FROTA', aberto:usado, vencido: status==='bad'? Math.floor(usado*0.4):0,
+        motivo: status==='bad'? `fatura vencida há ${Math.max(lastBuy,3)} dias`:null
+      });
+    }
+  }
+
+  // audit log seed
+  CLIENTS.forEach((c,i)=>{
+    c.id=i;
+    c.auditUser=['A. Ribeiro','C. Nunes','M. Alves','P. Santana','L. Prado'][i%5];
+    c.auditDate=daysAgo(1+(i%40));
+    c.limiteBase=c.limite;
+  });
+
+  // ---- header (fleet) ----
+  const faturados=CLIENTS.filter(c=>c.pj).length;
+  const inadimplentes=CLIENTS.filter(c=>c.status==='bad').length;
+  const limiteTotal=CLIENTS.reduce((a,c)=>a+c.limite,0);
+  $('fleet').innerHTML=`
+    <div class="f"><div class="v num">${TOTAL}</div><div class="k">Clientes</div></div>
+    <div class="f"><div class="v num">${faturados}</div><div class="k">Faturados</div></div>
+    <div class="f bad"><div class="v num">${inadimplentes}</div><div class="k">Bloqueados</div></div>
+    <div class="f"><div class="v num">${money(limiteTotal)}</div><div class="k">Limite concedido</div></div>`;
+
+  let filter='all', query='', current=0;
+
+  const inativosN=CLIENTS.filter(c=>c.status==='inativo'||c.lastBuy>=90).length;
+  const CHIPS=[
+    ['all','Todos · '+TOTAL],
+    ['fat','Faturados/convênio · '+faturados],
+    ['bad','Inadimplentes · '+inadimplentes],
+    ['pf','Varejo/PF · '+CLIENTS.filter(c=>c.pf).length],
+    ['inativa','Prestes a inativar · '+inativosN],
+    ...PRACAS.map(p=>[p, p+' · '+CLIENTS.filter(c=>c.praca===p).length])
+  ];
+
+  function renderChips(){
+    $('chips').innerHTML=CHIPS.map(c=>`<button class="chip ${c[0]==='bad'?'bad':''} ${filter===c[0]?'on':''}" data-f="${c[0]}">${c[1]}</button>`).join('');
+    $('chips').querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset.f; renderChips(); renderRows(); }));
+  }
+
+  function statusColor(c){
+    if(c.status==='bad') return 'var(--bad)';
+    if(c.status==='inativo') return 'var(--muted)';
+    if(c.lastBuy>=80 && c.lastBuy<90) return 'var(--warn)';
+    return 'var(--ok)';
+  }
+
+  function filtered(){
+    return CLIENTS.filter(c=>{
+      if(filter==='fat' && !c.pj) return false;
+      if(filter==='bad' && c.status!=='bad') return false;
+      if(filter==='pf' && !c.pf) return false;
+      if(filter==='inativa' && !(c.status==='inativo'||c.lastBuy>=80)) return false;
+      if(PRACAS.includes(filter) && c.praca!==filter) return false;
+      if(query){
+        const plates=c.frota? c.prefix+' '+c.nplacas : '';
+        if(!(c.nome+' '+c.doc+' '+c.cidade+' '+plates).toLowerCase().includes(query)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderRows(){
+    const list=filtered();
+    $('lcount').textContent=list.length+' de '+TOTAL+' clientes';
+    $('rows').innerHTML=list.map(c=>`
+      <button class="prow" data-i="${c.id}" aria-current="${c.id===current}">
+        <span class="st" style="background:${statusColor(c)}"></span>
+        <span class="in"><b>${c.nome}</b><small>${c.tipo} · ${c.cidade}${c.status==='bad'?' · ⚠ bloqueado':c.status==='inativo'?' · inativo':''}</small></span>
+        <span class="cts">${c.pj? money(c.limite):'PF'}</span>
+      </button>`).join('');
+    $('rows').querySelectorAll('.prow').forEach(b=>b.addEventListener('click',()=>{ current=+b.dataset.i; renderRows(); renderDetail(); }));
+  }
+
+  $('q').addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); renderRows(); });
+
+  function toast(msg){
+    $('toast-msg').textContent=msg;
+    $('toast').classList.add('show');
+    clearTimeout(window.__tt);
+    window.__tt=setTimeout(()=>$('toast').classList.remove('show'),2600);
+  }
+
+  function statusPill(c){
+    if(c.status==='bad') return '<span class="pill bad"><span class="pip"></span>Inadimplente — bloqueado</span>';
+    if(c.status==='inativo') return '<span class="pill gray"><span class="pip"></span>Inativo</span>';
+    if(c.released) return '<span class="pill ok"><span class="pip"></span>Em dia · liberado</span>';
+    return '<span class="pill ok"><span class="pip"></span>Em dia</span>';
+  }
+
+  function creditBar(c){
+    const pct=c.limite>0? Math.min(100, Math.round(c.usado/c.limite*100)):0;
+    const cls = pct>=90?'hot':pct>=75?'warn':'';
+    const disp=Math.max(0, c.limite-c.usado);
+    return `<div class="credit">
+      <div class="barwrap"><div class="bar ${cls}" id="cbar" style="width:${pct}%"></div></div>
+      <div class="lg"><span id="cused">${money2(c.usado)} usado</span><span id="cavail">disponível ${money2(disp)} · limite ${money2(c.limite)}</span></div>
+      ${c.pj?`<div class="edit">
+        <label for="limin">Alterar limite</label>
+        <div class="inp"><span>R$</span><input id="limin" class="num" type="text" value="${c.limite.toLocaleString('pt-BR')}" inputmode="numeric"></div>
+        <button id="limsave">Aplicar</button>
+      </div>`:''}
+    </div>`;
+  }
+
+  function frotaSection(c){
+    if(!c.frota || c.nplacas<=0) return '';
+    let s2=1000+c.id; const r2=()=> (s2=(s2*1103515245+12345)%2147483648)/2147483648;
+    const show=Math.min(c.nplacas,6);
+    const prods=[['Diesel S10','var(--diesel)'],['Gasolina comum','var(--gas)'],['Etanol','var(--etanol)'],['Gasolina aditivada','var(--adit)']];
+    let rows='';
+    for(let k=0;k<show;k++){
+      const pl=`${c.prefix}-${String(Math.floor(r2()*89+10))}`+(k<2?'':'');
+      const litros=(60+r2()*380);
+      const pr=prods[Math.floor(r2()*4)];
+      const gasto=litros*[6.09,5.89,4.29,6.19][k%4];
+      rows+=`<div class="rr"><span class="plate">${c.prefix}-${String(10+k).padStart(2,'0')}</span><span class="st" style="width:8px;height:8px;border-radius:50%;background:${pr[1]};display:inline-block"></span><b>${pr[0]}</b><span class="r">${litros.toFixed(0)} L · ${money2(gasto)} no mês</span></div>`;
+    }
+    return `<div class="rel"><div class="rh">Frota &amp; placas <span>${c.nplacas} veículos · consumo do mês</span></div>${rows}${c.nplacas>6?`<div class="rr"><b style="color:var(--muted);font-weight:600">+ ${c.nplacas-6} placas</b><span class="r">ver todas →</span></div>`:''}</div>`;
+  }
+
+  function financeSection(c){
+    let s3=5000+c.id; const r3=()=> (s3=(s3*1103515245+12345)%2147483648)/2147483648;
+    const invoices=[];
+    const nInv=c.pj? 3+Math.floor(r3()*3):2;
+    for(let k=0;k<nInv;k++){
+      const val=500+Math.floor(r3()*12000);
+      let st,cls;
+      if(c.status==='bad' && k===0){ st='Vencido'; cls='bad'; }
+      else if(k===0 && c.status==='ok'){ st='Em aberto'; cls='warn'; }
+      else { st='Pago'; cls='ok'; }
+      invoices.push({n:`NF ${String(48000+c.id*7+k)}`, venc:daysAgo(k===0?-4:(k*15-2)), val, st, cls});
+    }
+    return `<div class="finkpis">
+      <div class="finkpi"><div class="k">Em aberto</div><div class="v num">${money2(c.aberto)}</div></div>
+      <div class="finkpi ${c.vencido>0?'neg':''}"><div class="k">Vencido</div><div class="v num">${money2(c.vencido)}</div></div>
+      <div class="finkpi"><div class="k">Condição</div><div class="v" style="font-size:12.5px;font-weight:600">${c.cond}</div></div>
+    </div>
+    <div class="rel"><div class="rh">Histórico de faturas <span>últimas ${invoices.length}</span></div>
+      <div style="overflow-x:auto"><table class="stbl">
+        <thead><tr><th>Nota</th><th>Vencimento</th><th class="r">Valor</th><th>Status</th></tr></thead>
+        <tbody>${invoices.map(iv=>`<tr><td><b>${iv.n}</b></td><td class="num">${iv.venc}</td><td class="r num">${money2(iv.val)}</td><td><span class="pill ${iv.cls}"><span class="pip"></span>${iv.st}</span></td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  function renderDetail(){
+    const c=CLIENTS[current];
+    const nearInactive = c.status!=='inativo' && c.lastBuy>=80 && c.lastBuy<90;
+    const daysLeft = 90-c.lastBuy;
+
+    let pend='';
+    if(c.status==='bad'){
+      pend=`<div class="pendbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Bloqueado por inadimplência</b><span>${c.motivo}. Vendas faturadas travadas na frente de caixa até renegociação.</span></div><button id="unblock">Desbloquear / renegociar</button></div>`;
+    } else if(nearInactive){
+      pend=`<div class="pendbox warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Prestes a inativar automaticamente</b><span>Última compra há ${c.lastBuy} dias. Regra: inativa após 90 dias sem consumo — faltam ${daysLeft} dias.</span></div></div>`;
+    } else if(c.status==='inativo'){
+      pend=`<div class="pendbox warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Inativado automaticamente</b><span>Sem consumo há ${c.lastBuy} dias (> 90 dias). Reativa na próxima compra ou manualmente.</span></div><button id="reactivate">Reativar cadastro</button></div>`;
+    }
+
+    const inativBox = `<div class="prop ${nearInactive?'warn':''}"><div class="k">Inativação automática</div><div class="v">Última compra ${daysAgo(c.lastBuy)} <small>· ${c.status==='inativo'?'inativado (>90d)':nearInactive?'faltam '+daysLeft+' dias':'inativa após 90 dias sem consumo'}</small></div></div>`;
+
+    $('detail').innerHTML=`
+      <div class="crumb">${c.praca} · ${c.pj?'pessoa jurídica':'pessoa física'} · cliente da rede Morro Combustíveis</div>
+      <h1>${c.nome} ${statusPill(c)} <span class="pill brand">${c.tipo}</span></h1>
+      <p class="lead">${c.cidade} / SP · contato ${c.contato} · ${c.fone}</p>
+      ${pend}
+      <div class="props">
+        <div class="prop"><div class="k">${c.pj?'CNPJ':'CPF'}</div><div class="v num">${c.doc}</div></div>
+        <div class="prop"><div class="k">Inscrição estadual</div><div class="v num">${c.ie}</div></div>
+        <div class="prop"><div class="k">Telefone / contato</div><div class="v">${c.fone}</div></div>
+        <div class="prop wide"><div class="k">Condição de pagamento</div><div class="v">${c.cond} <small>· base do faturamento</small></div></div>
+        ${inativBox}
+        <div class="prop"><div class="k">Configuração de desconto</div><div class="v">${c.pf?'à vista · 1,0% dinheiro/PIX':'convênio · sem desconto na fatura'}</div></div>
+      </div>
+
+      <div class="rel"><div class="rh">Limite de crédito <span>usado × concedido</span></div>
+        <div style="padding:12px 14px">${creditBar(c)}</div>
+      </div>
+
+      ${frotaSection(c)}
+
+      <div class="rel" style="border:0;margin-bottom:6px"><div class="rh" style="border-radius:12px 12px 0 0;border:1px solid var(--line);border-bottom:0">Situação financeira <span>em aberto, vencido e faturas</span></div></div>
+      ${financeSection(c)}
+
+      <div class="audit">Última alteração por <b>${c.auditUser}</b> em <b>${c.auditDate}</b> · registro imutável na trilha de auditoria.</div>`;
+
+    // credit editing
+    const limin=$('limin');
+    if(limin){
+      const apply=()=>{
+        const raw=limin.value.replace(/[^\d]/g,'');
+        let val=parseInt(raw||'0',10);
+        if(isNaN(val)||val<0) val=0;
+        c.limite=val;
+        const pct=c.limite>0? Math.min(100, Math.round(c.usado/c.limite*100)):0;
+        const disp=Math.max(0,c.limite-c.usado);
+        const bar=$('cbar');
+        bar.style.width=pct+'%';
+        bar.className='bar '+(pct>=90?'hot':pct>=75?'warn':'');
+        $('cavail').textContent='disponível '+money2(disp)+' · limite '+money2(c.limite);
+        limin.value=c.limite.toLocaleString('pt-BR');
+        c.auditUser='você (agora)'; c.auditDate=HOJE.toLocaleDateString('pt-BR');
+        toast('Limite de '+c.nome+' ajustado para '+money2(c.limite));
+        const au=document.querySelector('.audit');
+        if(au) au.innerHTML='Última alteração por <b>você (agora)</b> em <b>'+HOJE.toLocaleDateString('pt-BR')+'</b> · limite alterado — registrado na trilha de auditoria.';
+      };
+      limin.addEventListener('input',()=>{ // live recalc as digita
+        const raw=limin.value.replace(/[^\d]/g,'');
+        const val=parseInt(raw||'0',10)||0;
+        const pct=val>0? Math.min(100, Math.round(c.usado/val*100)):0;
+        const disp=Math.max(0,val-c.usado);
+        const bar=$('cbar');
+        bar.style.width=pct+'%';
+        bar.className='bar '+(pct>=90?'hot':pct>=75?'warn':'');
+        $('cavail').textContent='disponível '+money2(disp)+' · limite '+money2(val);
+      });
+      $('limsave').addEventListener('click',apply);
+      limin.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); apply(); }});
+    }
+
+    // unblock / renegotiate
+    const ub=$('unblock');
+    if(ub) ub.addEventListener('click',()=>{
+      c.status='ok'; c.released=true; c.vencido=0; c.motivo=null;
+      c.auditUser='você (agora)'; c.auditDate=HOJE.toLocaleDateString('pt-BR');
+      toast(c.nome+' desbloqueado · renegociação registrada em auditoria');
+      renderRows(); renderDetail();
+    });
+    const ra=$('reactivate');
+    if(ra) ra.addEventListener('click',()=>{
+      c.status='ok'; c.lastBuy=0; c.released=true;
+      c.auditUser='você (agora)'; c.auditDate=HOJE.toLocaleDateString('pt-BR');
+      toast(c.nome+' reativado');
+      renderRows(); renderDetail();
+    });
+
+    $('detail').scrollTop=0;
+  }
+
+  renderChips(); renderRows(); renderDetail();
+})();
+</script>
