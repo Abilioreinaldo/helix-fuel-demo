@@ -182,7 +182,7 @@
 
 <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg><span id="toast-msg"></span></div>
 
-<p class="caption">Protótipo Helix Fuel · Cadastro de clientes em escala de rede (246 clientes). &nbsp;<b>Cobre: limite de crédito e bloqueio de inadimplentes, inativação automática por 90 dias sem consumo, consumo por placa (frota) e base do faturamento / condição de pagamento.</b></p>
+<p class="caption">Protótipo Helix Fuel · Cadastro de clientes em escala de rede (246 clientes). &nbsp;<b>Todo cliente tem código interno (CLI-0000) — que aparece na lista, na busca e na mensagem de inadimplência para achar o cadastro na hora. Cobre limite de crédito, bloqueio de inadimplentes, inativação automática (90 dias), consumo por placa e condição de pagamento.</b></p>
 
 <script>
 (function(){
@@ -293,6 +293,7 @@
   // audit log seed
   CLIENTS.forEach((c,i)=>{
     c.id=i;
+    c.code='CLI-'+String(i+1).padStart(4,'0'); // codigo interno estavel do cadastro
     c.auditUser=['A. Ribeiro','C. Nunes','M. Alves','P. Santana','L. Prado'][i%5];
     c.auditDate=daysAgo(1+(i%40));
     c.limiteBase=c.limite;
@@ -341,7 +342,7 @@
       if(PRACAS.includes(filter) && c.praca!==filter) return false;
       if(query){
         const plates=c.frota? c.prefix+' '+c.nplacas : '';
-        if(!(c.nome+' '+c.doc+' '+c.cidade+' '+plates).toLowerCase().includes(query)) return false;
+        if(!(c.code+' '+c.nome+' '+c.doc+' '+c.cidade+' '+plates).toLowerCase().includes(query)) return false;
       }
       return true;
     });
@@ -353,7 +354,7 @@
     $('rows').innerHTML=list.map(c=>`
       <button class="prow" data-i="${c.id}" aria-current="${c.id===current}">
         <span class="st" style="background:${statusColor(c)}"></span>
-        <span class="in"><b>${c.nome}</b><small>${c.tipo} · ${c.cidade}${c.status==='bad'?' · ⚠ bloqueado':c.status==='inativo'?' · inativo':''}</small></span>
+        <span class="in"><b>${c.nome}</b><small><b style="color:var(--faint);font-weight:700">${c.code}</b> · ${c.cidade}${c.status==='bad'?' · ⚠ bloqueado':c.status==='inativo'?' · inativo':''}</small></span>
         <span class="cts">${c.pj? money(c.limite):'PF'}</span>
       </button>`).join('');
     $('rows').querySelectorAll('.prow').forEach(b=>b.addEventListener('click',()=>{ current=+b.dataset.i; renderRows(); renderDetail(); }));
@@ -438,7 +439,7 @@
 
     let pend='';
     if(c.status==='bad'){
-      pend=`<div class="pendbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Bloqueado por inadimplência</b><span>${c.motivo}. Vendas faturadas travadas na frente de caixa até renegociação.</span></div><button id="unblock">Desbloquear / renegociar</button></div>`;
+      pend=`<div class="pendbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Bloqueado por inadimplência · cód. ${c.code}</b><span>${c.motivo}. Vendas faturadas travadas na frente de caixa até renegociação — informe o código <b style="color:var(--bad)">${c.code}</b> para localizar o cadastro.</span></div><button id="unblock">Desbloquear / renegociar</button></div>`;
     } else if(nearInactive){
       pend=`<div class="pendbox warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>Prestes a inativar automaticamente</b><span>Última compra há ${c.lastBuy} dias. Regra: inativa após 90 dias sem consumo — faltam ${daysLeft} dias.</span></div></div>`;
     } else if(c.status==='inativo'){
@@ -448,8 +449,8 @@
     const inativBox = `<div class="prop ${nearInactive?'warn':''}"><div class="k">Inativação automática</div><div class="v">Última compra ${daysAgo(c.lastBuy)} <small>· ${c.status==='inativo'?'inativado (>90d)':nearInactive?'faltam '+daysLeft+' dias':'inativa após 90 dias sem consumo'}</small></div></div>`;
 
     $('detail').innerHTML=`
-      <div class="crumb">${c.praca} · ${c.pj?'pessoa jurídica':'pessoa física'} · cliente da rede Morro Combustíveis</div>
-      <h1>${c.nome} ${statusPill(c)} <span class="pill brand">${c.tipo}</span></h1>
+      <div class="crumb">Código interno ${c.code} · ${c.praca} · ${c.pj?'pessoa jurídica':'pessoa física'} · cliente da rede Morro Combustíveis</div>
+      <h1>${c.nome} ${statusPill(c)} <span class="pill brand" id="codepill" title="clique para copiar o código" style="cursor:pointer">${c.code}</span></h1>
       <p class="lead">${c.cidade} / SP · contato ${c.contato} · ${c.fone}</p>
       ${pend}
       <div class="props">
@@ -471,6 +472,10 @@
       ${financeSection(c)}
 
       <div class="audit">Última alteração por <b>${c.auditUser}</b> em <b>${c.auditDate}</b> · registro imutável na trilha de auditoria.</div>`;
+
+    // copiar codigo interno
+    const cp=$('codepill');
+    if(cp) cp.addEventListener('click',()=>{ try{navigator.clipboard&&navigator.clipboard.writeText(c.code);}catch(e){} toast('Código '+c.code+' copiado — cole na busca para achar o cadastro'); });
 
     // credit editing
     const limin=$('limin');

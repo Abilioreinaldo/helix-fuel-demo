@@ -232,9 +232,9 @@
     {id:'faturado', nm:'Faturado', sub:'F11', ic:'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'},
   ];
   const clients=[
-    {id:'rodovale', nm:'Transportes Rodovale', limite:21790, blocked:false},
-    {id:'agro',     nm:'Agro Boituva Máquinas', limite:9430,  blocked:false},
-    {id:'pref',     nm:'Prefeitura de Tatuí',   limite:0,     blocked:true, motivo:'fatura vencida há 9 dias'},
+    {id:'rodovale', code:'CLI-0001', nm:'Transportes Rodovale', limite:21790, blocked:false},
+    {id:'agro',     code:'CLI-0002', nm:'Agro Boituva Máquinas', limite:9430,  blocked:false},
+    {id:'pref',     code:'CLI-0003', nm:'Prefeitura de Tatuí',   limite:0,     blocked:true, motivo:'fatura vencida há 9 dias'},
   ];
   const CMC7_DUP='<12345678< 1234567890 >123456789012>'; // banda já lançada na rede (demo)
 
@@ -326,7 +326,7 @@
       let st='';
       if(client){
         if(client.blocked && !authorized){
-          st='<div class="st err">✕ Cliente bloqueado — '+client.motivo+'</div>'
+          st='<div class="st err">✕ Cliente bloqueado ('+client.code+') — '+client.motivo+' · localize o cadastro pelo cód. '+client.code+'</div>'
             +(authWait
               ? '<div class="st wait">⏳ Pedido enviado ao celular de M. Alves (gerente)…</div>'
               : '<button class="authbtn" id="auth-go">Pedir autorização ao gerente</button>');
@@ -343,7 +343,7 @@
         }
       }
       box.innerHTML='<label>Cliente do convênio</label><select id="cli"><option value="">Selecionar…</option>'
-        +clients.map(c=>'<option value="'+c.id+'" '+(client&&client.id===c.id?'selected':'')+'>'+c.nm+(c.blocked?' · BLOQUEADO':'')+'</option>').join('')
+        +clients.map(c=>'<option value="'+c.id+'" '+(client&&client.id===c.id?'selected':'')+'>'+c.code+' · '+c.nm+(c.blocked?' · BLOQUEADO':'')+'</option>').join('')
         +'</select>'+st;
       $('cli').addEventListener('change',e=>{ client=clients.find(c=>c.id===e.target.value)||null; authorized=false; authWait=false; renderExtra(); updateFin(); });
       const ab=$('auth-go');
