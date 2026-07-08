@@ -222,7 +222,7 @@
 
   const DIMS={forma:'Forma de pagamento', turno:'Turno', posto:'Posto', produto:'Produto', vendedor:'Vendedor', cliente:'Cliente'};
   const ROWS={
-    forma:['Crédito','Débito','PIX','Dinheiro','Faturado'],
+    forma:['Crédito','Débito','PIX','Dinheiro','Faturado · Carta frete','Faturado · Nota a prazo','Cheque'],
     turno:['Turno 1 · 06h–14h','Turno 2 · 14h–22h','Turno 3 · 22h–06h'],
     posto:['Morro Sorocaba','Morro Campinas','Morro Rio Preto','Morro Bauru','Morro Tatuí','Morro Franca','Morro Marília','Morro Jundiaí','… mais 62 postos'],
     produto:['Gasolina comum','Diesel S10','Etanol','Gasolina aditivada','Loja & conveniência'],
@@ -293,9 +293,9 @@
       <div class="dims"><span class="lbl">Agrupar por</span>${Object.keys(DIMS).map(d=>`<button class="dim ${d===curDim?'on':''}" data-d="${d}">${DIMS[d]}</button>`).join('')}</div>
       <div class="card"><div style="overflow-x:auto">
         <table class="stbl">
-          <thead><tr><th>${DIMS[curDim]}</th><th class="r">Valor</th><th class="r">Volume</th><th class="r">Cupons</th><th class="r">Ticket médio</th><th style="width:130px"></th></tr></thead>
-          <tbody>${rows.map(r=>`<tr><td style="font-weight:600">${r.nm}</td><td class="r num">${BRL.format(r.v)}</td><td class="r num">${NL.format(Math.round(r.lit))} L</td><td class="r num">${NL.format(r.cup)}</td><td class="r num">${BRL.format(r.tk)}</td><td><span class="bar" style="width:${Math.round(r.v/max*110)}px"></span></td></tr>`).join('')}</tbody>
-          <tfoot><tr><td>Total</td><td class="r num">${BRL.format(tot)}</td><td class="r num">${NL.format(Math.round(tot/5.7))} L</td><td class="r num">${NL.format(rows.reduce((a,r)=>a+r.cup,0))}</td><td class="r num">${BRL.format(tot/rows.reduce((a,r)=>a+r.cup,0))}</td><td></td></tr></tfoot>
+          <thead><tr><th>${DIMS[curDim]}</th><th class="r">Valor</th><th class="r">Part. %</th><th class="r">Volume</th><th class="r">Cupons</th><th class="r">Ticket médio</th><th style="width:130px"></th></tr></thead>
+          <tbody>${rows.map(r=>`<tr><td style="font-weight:600">${r.nm}</td><td class="r num">${BRL.format(r.v)}</td><td class="r num" style="font-weight:640;color:var(--brand-ink)">${(r.v/tot*100).toFixed(1).replace('.',',')}%</td><td class="r num">${NL.format(Math.round(r.lit))} L</td><td class="r num">${NL.format(r.cup)}</td><td class="r num">${BRL.format(r.tk)}</td><td><span class="bar" style="width:${Math.round(r.v/max*110)}px"></span></td></tr>`).join('')}</tbody>
+          <tfoot><tr><td>Total</td><td class="r num">${BRL.format(tot)}</td><td class="r num">100,0%</td><td class="r num">${NL.format(Math.round(tot/5.7))} L</td><td class="r num">${NL.format(rows.reduce((a,r)=>a+r.cup,0))}</td><td class="r num">${BRL.format(tot/rows.reduce((a,r)=>a+r.cup,0))}</td><td></td></tr></tfoot>
         </table>
       </div></div>
       <div class="acts">
