@@ -1,0 +1,617 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Autoatendimento WhatsApp</title>
+<style>
+  :root{
+    --bg:#D8DDE3;
+    --wa-teal:#075E54; --wa-teal-2:#128C7E; --wa-green:#25D366;
+    --wa-header:#008069;
+    --chat-bg:#EFE7DE;
+    --bubble-in:#FFFFFF; --bubble-out:#D9FDD3;
+    --ink:#111B21; --muted:#667781; --faint:#8696A0;
+    --line:#E9EDEF; --tick:#53BDEB;
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); font-family:var(--sans); color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; padding:26px 14px 36px;
+    -webkit-font-smoothing:antialiased; min-height:100vh}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---------- phone frame (herdado do pista-mobile) ---------- */
+  .phone{width:392px; max-width:100%; background:#000; border:9px solid #161A24;
+    border-radius:40px; overflow:hidden; box-shadow:0 30px 70px -25px rgba(22,26,36,.5);
+    display:flex; flex-direction:column; height:788px; position:relative}
+
+  /* ---------- header estilo WhatsApp ---------- */
+  .wa-head{display:flex; align-items:center; gap:10px; padding:12px 12px 11px;
+    background:var(--wa-header); color:#fff; flex:none}
+  .wa-head .back{font-size:22px; line-height:1; opacity:.95; margin-right:-2px}
+  .wa-head .pic{width:40px; height:40px; border-radius:50%; background:#0b3d38;
+    display:grid; place-items:center; flex:none; overflow:hidden}
+  .wa-head .pic svg{width:26px; height:26px}
+  .wa-head .meta{flex:1; min-width:0}
+  .wa-head .meta .nm{display:flex; align-items:center; gap:5px; font-size:15.5px;
+    font-weight:600; line-height:1.2}
+  .wa-head .meta .nm .verified{width:15px; height:15px; flex:none}
+  .wa-head .meta .st{font-size:11.5px; color:#cfe9e3; line-height:1.3; margin-top:1px}
+  .wa-head .ico{display:flex; gap:16px; align-items:center; padding-left:4px}
+  .wa-head .ico svg{width:19px; height:19px; opacity:.95}
+
+  /* ---------- chat body ---------- */
+  .wa-body{flex:1; overflow-y:auto; padding:12px 10px 8px; background:var(--chat-bg);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(0,0,0,.020) 0 2px, transparent 2px),
+      radial-gradient(circle at 65% 55%, rgba(0,0,0,.018) 0 2px, transparent 2px),
+      radial-gradient(circle at 40% 80%, rgba(0,0,0,.016) 0 2px, transparent 2px),
+      radial-gradient(circle at 88% 35%, rgba(0,0,0,.018) 0 2px, transparent 2px);
+    background-size:130px 130px, 170px 170px, 150px 150px, 190px 190px;
+    display:flex; flex-direction:column; gap:3px; scroll-behavior:smooth}
+  @media(prefers-reduced-motion:reduce){ .wa-body{scroll-behavior:auto} }
+
+  .day{align-self:center; background:#E1F3FB; color:#4a6b7a; font-size:11px;
+    font-weight:600; padding:4px 11px; border-radius:8px; margin:2px 0 6px;
+    box-shadow:0 1px 0 rgba(0,0,0,.05)}
+  .sysenc{align-self:center; background:#FCF4CB; color:#54656F; font-size:10.5px;
+    text-align:center; padding:6px 12px; border-radius:8px; margin-bottom:8px;
+    max-width:88%; line-height:1.45; box-shadow:0 1px 0 rgba(0,0,0,.05)}
+  .sysenc svg{width:11px; height:11px; vertical-align:-1px; margin-right:2px}
+
+  /* balões */
+  .row{display:flex; width:100%; animation:pop .18s ease}
+  .row.in{justify-content:flex-start}
+  .row.out{justify-content:flex-end}
+  @keyframes pop{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){ .row{animation:none} }
+
+  .bubble{max-width:82%; padding:6px 9px 5px; border-radius:9px; font-size:14px;
+    line-height:1.4; position:relative; box-shadow:0 1px .5px rgba(11,20,26,.13);
+    word-wrap:break-word}
+  .row.in .bubble{background:var(--bubble-in); border-top-left-radius:2px}
+  .row.out .bubble{background:var(--bubble-out); border-top-right-radius:2px}
+  .bubble b,.bubble strong{font-weight:600}
+  .bubble em{font-style:italic}
+  .bubble .time{font-size:10.5px; color:var(--faint); float:right;
+    margin:3px 0 -1px 8px; line-height:1; white-space:nowrap}
+  .row.out .bubble .time .tick{color:var(--tick); font-weight:700; letter-spacing:-1px; margin-left:2px}
+  .bubble .txt{white-space:pre-wrap}
+
+  /* tail */
+  .row.in .bubble::before,.row.out .bubble::after{content:""; position:absolute; top:0;
+    width:10px; height:12px}
+  .row.in .bubble::before{left:-7px;
+    background:radial-gradient(circle at bottom right, transparent 11px, var(--bubble-in) 11px)}
+  .row.out .bubble::after{right:-7px;
+    background:radial-gradient(circle at bottom left, transparent 11px, var(--bubble-out) 11px)}
+
+  /* indicador digitando */
+  .typing .bubble{padding:10px 13px}
+  .dots{display:inline-flex; gap:4px; align-items:center}
+  .dots i{width:7px; height:7px; border-radius:50%; background:#9aa6ac; display:block;
+    animation:blink 1.2s infinite ease-in-out}
+  .dots i:nth-child(2){animation-delay:.2s}
+  .dots i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3; transform:translateY(0)} 30%{opacity:1; transform:translateY(-3px)}}
+  @media(prefers-reduced-motion:reduce){ .dots i{animation:none; opacity:.6} }
+
+  /* botões quick-reply (estilo WhatsApp interactive) */
+  .qr{display:flex; flex-direction:column; gap:1px; align-self:flex-start;
+    max-width:82%; margin:1px 0 5px; animation:pop .2s ease}
+  @media(prefers-reduced-motion:reduce){ .qr{animation:none} }
+  .qrbtn{font-family:inherit; font-size:14px; font-weight:500; color:#00A5F4;
+    background:#fff; border:0; border-top:1px solid var(--line); padding:11px 10px;
+    cursor:pointer; text-align:center; display:flex; align-items:center;
+    justify-content:center; gap:7px; transition:background .12s}
+  .qrbtn:first-child{border-top:0; border-radius:8px 8px 0 0}
+  .qrbtn:last-child{border-radius:0 0 8px 8px}
+  .qrbtn:only-child{border-radius:8px}
+  .qrbtn:hover{background:#f5fbff}
+  .qrbtn:active{background:#e8f5ff}
+  .qrbtn:focus-visible{outline:2px solid var(--wa-green); outline-offset:-2px}
+  .qrbtn.menu{color:var(--muted); font-weight:600}
+  .qrbtn.menu svg{width:15px; height:15px}
+
+  /* card de documento / boleto dentro do balão */
+  .doccard{background:#F5F6F6; border-radius:7px; padding:9px; margin:-2px 0 4px;
+    display:flex; gap:9px; align-items:center}
+  .doccard .fi{width:38px; height:44px; border-radius:5px; background:#fff;
+    border:1px solid #e2e6e8; display:grid; place-items:center; flex:none; position:relative}
+  .doccard .fi b{font-size:8px; font-weight:800; color:#EA4335; letter-spacing:.02em}
+  .doccard .fi svg{width:20px; height:20px; color:#EA4335}
+  .doccard .di{min-width:0}
+  .doccard .di .t{font-size:13px; font-weight:600; line-height:1.25}
+  .doccard .di .s{font-size:11.5px; color:var(--muted); margin-top:2px}
+
+  .filerow{display:flex; gap:6px; margin-top:2px}
+  .filebtn{flex:1; font-family:inherit; font-size:12.5px; font-weight:600; color:#027EB5;
+    background:#fff; border:1px solid #d7dde0; border-radius:7px; padding:8px 6px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px}
+  .filebtn:hover{background:#f2f9fc; border-color:#8fd0e8}
+  .filebtn:active{background:#e7f4fa}
+  .filebtn:focus-visible{outline:2px solid var(--wa-green); outline-offset:1px}
+  .filebtn svg{width:14px; height:14px}
+
+  /* linha digitável / pix / limite dentro do balão */
+  .codebox{background:#F0F2F3; border:1px dashed #c9d2d6; border-radius:6px;
+    padding:7px 9px; margin:4px 0 3px; font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+    font-size:11px; line-height:1.5; color:#33434b; word-break:break-all; letter-spacing:.01em}
+  .codelabel{font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--faint); font-weight:700; margin:6px 0 1px}
+
+  /* mini QR desenhado em CSS grid */
+  .qrpix{width:118px; height:118px; margin:6px auto 4px; padding:7px; background:#fff;
+    border:1px solid #e2e6e8; border-radius:8px; display:grid;
+    grid-template-columns:repeat(11,1fr); grid-template-rows:repeat(11,1fr); gap:1px}
+  .qrpix i{background:transparent}
+  .qrpix i.on{background:#111B21; border-radius:1px}
+
+  /* barra de limite */
+  .lbar{height:9px; border-radius:5px; background:#E3E8EA; overflow:hidden; margin:7px 0 3px}
+  .lbar i{display:block; height:100%; background:linear-gradient(90deg,#25D366,#128C7E); border-radius:5px}
+  .lstat{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-weight:600}
+
+  /* mini tabela de consumo */
+  .fleetrow{display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:6px 0; border-bottom:1px solid #eceff0; font-size:13px}
+  .fleetrow:last-child{border-bottom:0}
+  .fleetrow .pl{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace; font-size:11px;
+    font-weight:800; letter-spacing:.06em; color:#33434b; background:#F0F2F3;
+    border:1px solid #dbe1e4; border-radius:5px; padding:1px 7px; white-space:nowrap}
+  .fleetrow .cn{font-weight:600; font-variant-numeric:tabular-nums; text-align:right}
+  .fleetrow .cn small{display:block; font-weight:500; color:var(--faint); font-size:10.5px}
+
+  /* ---------- input bar ---------- */
+  .wa-input{flex:none; display:flex; align-items:center; gap:7px; padding:7px 8px 9px;
+    background:var(--chat-bg)}
+  .wa-input .field{flex:1; display:flex; align-items:center; gap:7px; background:#fff;
+    border-radius:22px; padding:9px 12px; box-shadow:0 1px 1px rgba(11,20,26,.08)}
+  .wa-input .field svg{width:19px; height:19px; color:#8696A0; flex:none}
+  .wa-input .field input{flex:1; border:0; outline:none; font-family:inherit; font-size:14.5px;
+    color:var(--ink); background:transparent; min-width:0}
+  .wa-input .field input::placeholder{color:#8696A0}
+  .wa-input .send{width:44px; height:44px; border-radius:50%; border:0; background:var(--wa-header);
+    color:#fff; display:grid; place-items:center; cursor:pointer; flex:none}
+  .wa-input .send svg{width:21px; height:21px}
+  .wa-input .send:focus-visible{outline:2px solid #fff; outline-offset:-3px}
+
+  /* toast */
+  .toast{position:absolute; left:50%; bottom:78px; transform:translateX(-50%) translateY(8px);
+    background:#2A3942; color:#fff; font-size:12.5px; font-weight:600; padding:9px 16px;
+    border-radius:20px; opacity:0; pointer-events:none; transition:.22s; white-space:nowrap;
+    box-shadow:0 6px 20px -6px rgba(0,0,0,.5); z-index:5}
+  .toast.show{opacity:1; transform:translateX(-50%)}
+  @media(prefers-reduced-motion:reduce){ .toast{transition:none} }
+
+  .caption{margin-top:16px; font-size:11.5px; color:#5a6b74; text-align:center; max-width:62ch; line-height:1.5}
+  .caption b{color:#3f4d55; font-weight:600}
+</style>
+
+<div class="phone">
+  <!-- HEADER -->
+  <div class="wa-head">
+    <span class="back">‹</span>
+    <div class="pic">
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+    </div>
+    <div class="meta">
+      <div class="nm">Helix Fuel
+        <svg class="verified" viewBox="0 0 24 24" aria-label="conta verificada">
+          <path fill="#25D366" d="M12 1l2.6 2 3.2-.3 1.2 3 3 1.2-.3 3.2 2 2.6-2 2.6.3 3.2-3 1.2-1.2 3-3.2-.3L12 23l-2.6-2-3.2.3-1.2-3-3-1.2.3-3.2L.5 12l2-2.6-.3-3.2 3-1.2 1.2-3 3.2.3z"/>
+          <path fill="#fff" d="M10.6 15.2l-2.9-2.9 1.3-1.3 1.6 1.6 4-4 1.3 1.3z"/>
+        </svg>
+      </div>
+      <div class="st">conta comercial · online</div>
+    </div>
+    <div class="ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M20 15.5a11 11 0 01-3.5-.6 1 1 0 00-1 .3l-2 2a15 15 0 01-6.6-6.6l2-2a1 1 0 00.3-1A11 11 0 018.5 4a1 1 0 00-1-1H4a1 1 0 00-1 1 17 17 0 0017 17 1 1 0 001-1v-3.5a1 1 0 00-1-1z"/></svg>
+      <svg viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="wa-body" id="chat">
+    <div class="day">HOJE</div>
+    <div class="sysenc">
+      <svg viewBox="0 0 24 24" fill="#54656F"><path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm3 8H9V6a3 3 0 016 0z"/></svg>
+      As mensagens são protegidas com criptografia de ponta a ponta. Este é o canal oficial de autoatendimento da Helix Fuel.
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="wa-input">
+    <div class="field">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+      <input id="msg" type="text" placeholder="Mensagem" autocomplete="off" aria-label="Digite uma mensagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14l4-4h12a2 2 0 002-2z" transform="rotate(0)"/><path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95L9.4 18.05" fill="none"/></svg>
+    </div>
+    <button class="send" id="send" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<p class="caption">Protótipo Helix Fuel · <b>autoatendimento do cliente via WhatsApp</b> — canal irmão do Portal do cliente web. Mesmo cadastro e limite (cliente Transportes Rodovale · CLI-0001): NF-e, boleto/PIX, limite e consumo da frota resolvidos direto no chat, sem ligar pro posto.</p>
+
+<script>
+(function(){
+  var chat=document.getElementById('chat');
+  var toastEl=document.getElementById('toast');
+  var input=document.getElementById('msg');
+  var sendBtn=document.getElementById('send');
+  var busy=false;
+
+  function now(){
+    var d=new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function scrollDown(){ chat.scrollTop=chat.scrollHeight; }
+
+  // negrito *texto* -> <b>, itálico _texto_ -> <em>
+  function fmt(t){
+    return t
+      .replace(/\*(.+?)\*/g,'<b>$1</b>')
+      .replace(/_(.+?)_/g,'<em>$1</em>');
+  }
+
+  function bubbleIn(html){
+    var row=document.createElement('div');
+    row.className='row in';
+    row.innerHTML='<div class="bubble"><span class="txt">'+html+
+      '</span><span class="time">'+now()+'</span></div>';
+    chat.appendChild(row); scrollDown();
+    return row;
+  }
+  function bubbleOut(text){
+    var row=document.createElement('div');
+    row.className='row out';
+    row.innerHTML='<div class="bubble"><span class="txt">'+fmt(text)+
+      '</span><span class="time">'+now()+' <span class="tick">✓✓</span></span></div>';
+    chat.appendChild(row); scrollDown();
+  }
+
+  // grupo de botões quick-reply. opts=[{label, onClick}]
+  var lastQR=null;
+  function quickReplies(opts){
+    var box=document.createElement('div');
+    box.className='qr';
+    opts.forEach(function(o){
+      var b=document.createElement('button');
+      b.className='qrbtn'+(o.menu?' menu':'');
+      b.type='button';
+      b.innerHTML=(o.menu?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>':'')+o.label;
+      b.addEventListener('click',function(){
+        if(busy) return;
+        box.remove();               // botões somem ao escolher (como no WhatsApp)
+        bubbleOut(o.reply||stripEmoji(o.label));
+        o.onClick&&o.onClick();
+      });
+      box.appendChild(b);
+    });
+    chat.appendChild(box); scrollDown();
+    lastQR=box;
+  }
+  function stripEmoji(s){ return s.replace(/^[^\w\dÀ-ÿ]+\s*/,'').trim(); }
+
+  // "digitando..." depois responde via cb
+  function typing(cb,delay){
+    busy=true;
+    var row=document.createElement('div');
+    row.className='row in typing';
+    row.innerHTML='<div class="bubble"><span class="dots"><i></i><i></i><i></i></span></div>';
+    chat.appendChild(row); scrollDown();
+    setTimeout(function(){ row.remove(); busy=false; cb(); }, delay||1100);
+  }
+
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function td(ms){ return reduce?350:ms; }
+
+  var tmr;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(tmr); tmr=setTimeout(function(){ toastEl.classList.remove('show'); },1900);
+  }
+
+  // ---------- DADOS (coerentes com o portal-cliente / CLI-0001) ----------
+  var CLIENTE='Transportes Rodovale';
+  var NOTAS=[
+    {n:'12.847', v:'R$ 13.032,60', posto:'Posto Morro Sorocaba', det:'Diesel S10 · 2.140 L', data:'05/07'},
+    {n:'12.799', v:'R$ 11.327,40', posto:'Posto Morro Tatuí',    det:'Diesel S10 · 1.860 L', data:'03/07'},
+    {n:'12.752', v:'R$ 14.067,90', posto:'Posto Morro Itu',      det:'Diesel S10 · 2.310 L', data:'01/07'}
+  ];
+  var LINHA='34191.79001 01043.510047 91020.150008 8 98470000048210';
+  var PIX='00020126580014br.gov.bcb.pix0136a1b2c3d4-helix-fuel-0001-rodovale52040000530398654074821005802BR5910HELIX FUEL6009SOROCABA62070503***6304AB12';
+
+  // ---------- QR desenhado (padrão fixo, 11x11) ----------
+  function qrSvg(){
+    var P=[
+      "11111011111","10001010001","10111010111","10111011011","10111010111",
+      "10001001001","11111011111","00000010000","11011101101","01001000010","11101011011"
+    ];
+    var cells='';
+    for(var r=0;r<11;r++) for(var c=0;c<11;c++) cells+='<i'+(P[r][c]==='1'?' class="on"':'')+'></i>';
+    return '<div class="qrpix" aria-hidden="true">'+cells+'</div>';
+  }
+
+  function backToMenu(){
+    quickReplies([{label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}]);
+  }
+
+  // ---------- MENU ----------
+  function showMenu(){
+    typing(function(){
+      bubbleIn('Com o que posso te ajudar? Escolha uma opção abaixo 👇');
+      quickReplies([
+        {label:'📄 2ª via de NF-e', onClick:fluxoNF},
+        {label:'💳 Boleto / PIX',   onClick:fluxoBoleto},
+        {label:'💰 Consultar limite', onClick:fluxoLimite},
+        {label:'⛽ Consumo da frota', onClick:fluxoConsumo},
+        {label:'⛽ Liberar abastecimento', onClick:fluxoLiberar},
+        {label:'🧑‍💼 Falar com atendente', onClick:fluxoAtendente}
+      ]);
+    }, td(900));
+  }
+
+  // ---------- FLUXO: 2ª via NF-e ----------
+  function fluxoNF(){
+    typing(function(){
+      bubbleIn('Aqui estão suas *notas mais recentes*. Toque na que você precisa da 2ª via:');
+      quickReplies(NOTAS.map(function(nf){
+        return {
+          label:'NF-e '+nf.n+' · '+nf.v,
+          reply:'NF-e '+nf.n,
+          onClick:function(){ enviaNota(nf); }
+        };
+      }).concat([{label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}]));
+    }, td(1000));
+  }
+  function enviaNota(nf){
+    typing(function(){
+      var card='<div class="doccard">'+
+          '<div class="fi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg></div>'+
+          '<div class="di"><div class="t">NF-e '+nf.n+'</div>'+
+          '<div class="s">'+nf.posto+'<br>'+nf.det+' · '+nf.v+'</div></div>'+
+        '</div>'+
+        '<div class="filerow">'+
+          '<button class="filebtn" type="button" data-dl="Baixando PDF da NF-e '+nf.n+' ✅">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Baixar PDF</button>'+
+          '<button class="filebtn" type="button" data-dl="Baixando XML da NF-e '+nf.n+' ✅">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Baixar XML</button>'+
+        '</div>';
+      var row=bubbleIn('*2ª via emitida* — mesma nota do seu Portal web:');
+      row.querySelector('.txt').insertAdjacentHTML('beforeend', card);
+      bindDl(row);
+      scrollDown();
+      backToMenu();
+    }, td(1200));
+  }
+
+  // ---------- FLUXO: Boleto / PIX ----------
+  function fluxoBoleto(){
+    typing(function(){
+      var card='<div class="doccard">'+
+          '<div class="fi"><b>BOLETO</b></div>'+
+          '<div class="di"><div class="t">Fatura 07/2026 · quinzena 1</div>'+
+          '<div class="s">Vence *12/07* · *R$ 48.210,00*</div></div>'+
+        '</div>'+
+        '<div class="codelabel">Linha digitável</div>'+
+        '<div class="codebox">'+LINHA+'</div>'+
+        '<div class="codelabel">PIX copia e cola</div>'+
+        qrSvg()+
+        '<div class="codebox">'+PIX+'</div>'+
+        '<div class="filerow">'+
+          '<button class="filebtn" type="button" data-copy="'+LINHA+'" data-ok="Linha digitável copiada ✅">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copiar linha</button>'+
+          '<button class="filebtn" type="button" data-copy="'+PIX+'" data-ok="Código PIX copiado ✅">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copiar código PIX</button>'+
+        '</div>';
+      var row=bubbleIn('Aqui está o *boleto híbrido* da sua fatura em aberto. Pague pela linha digitável ou pelo *PIX*:');
+      row.querySelector('.txt').insertAdjacentHTML('beforeend', card);
+      bindCopy(row);
+      scrollDown();
+      typing(function(){
+        bubbleIn('É o mesmo valor do seu Portal web. Compensa na hora pelo PIX 💚');
+        backToMenu();
+      }, td(700));
+    }, td(1200));
+  }
+
+  // ---------- FLUXO: Limite ----------
+  function fluxoLimite(){
+    typing(function(){
+      var body='Seu limite de crédito no faturado:'+
+        '<div class="lbar"><i style="width:69%"></i></div>'+
+        '<div class="lstat"><span>usado R$ 48.210</span><span>total R$ 70.000</span></div>';
+      var row=bubbleIn(body);
+      row.querySelector('.txt').insertAdjacentHTML('beforeend',
+        '<div style="margin-top:6px">✅ *Disponível agora: R$ 21.790*</div>'+
+        '<div style="margin-top:2px; color:#667781; font-size:12.5px">Renova no fechamento da fatura (12/07). Mesmo limite do seu Portal web.</div>');
+      scrollDown();
+      backToMenu();
+    }, td(1000));
+  }
+
+  // ---------- FLUXO: Consumo da frota ----------
+  function fluxoConsumo(){
+    typing(function(){
+      var top=[
+        {pl:'FROTA-07', l:'2.140 L', v:'R$ 13.032', ult:'hoje 14h · Sorocaba'},
+        {pl:'FROTA-12', l:'1.980 L', v:'R$ 12.058', ult:'ontem 09h · Tatuí'},
+        {pl:'FROTA-03', l:'1.740 L', v:'R$ 10.597', ult:'05/07 · Itu'}
+      ];
+      var rows=top.map(function(f){
+        return '<div class="fleetrow"><span class="pl">'+f.pl+'</span>'+
+          '<span class="cn">'+f.l+'<small>'+f.v+' · '+f.ult+'</small></span></div>';
+      }).join('');
+      var row=bubbleIn('*Consumo da frota em julho*\n⛽ *12.480 L* · ~R$ 76.000 · 28 veículos');
+      row.querySelector('.txt').insertAdjacentHTML('beforeend',
+        '<div class="codelabel" style="margin-top:7px">Placas que mais consumiram</div>'+rows);
+      scrollDown();
+      typing(function(){
+        bubbleIn('Quer o detalhamento dos 28 veículos? Está no seu *Portal do cliente* web 👍');
+        backToMenu();
+      }, td(700));
+    }, td(1200));
+  }
+
+  // ---------- FLUXO: Liberar abastecimento (pré-autorização de bomba) ----------
+  // placas: as 3 do faturado + uma bloqueada p/ demonstrar a recusa
+  var VEIC=[
+    {pl:'FROTA-07', status:'ativo'},
+    {pl:'FROTA-12', status:'ativo'},
+    {pl:'FROTA-03', status:'ativo'},
+    {pl:'FROTA-11', status:'bloqueado', motivo:'bloqueado pela empresa (em manutenção)'}
+  ];
+  function fluxoLiberar(){
+    typing(function(){
+      bubbleIn('Vamos *liberar uma bomba* pra você. 🛢️\nQual *veículo* vai abastecer?');
+      quickReplies(VEIC.map(function(v){
+        return {
+          label:(v.status==='bloqueado'?'⛔ ':'') + v.pl,
+          reply:v.pl,
+          onClick:function(){ libPosto(v); }
+        };
+      }).concat([{label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}]));
+    }, td(1000));
+  }
+  function libPosto(v){
+    // veículo bloqueado -> recusa com motivo (caminho alternativo)
+    if(v.status==='bloqueado'){
+      typing(function(){
+        bubbleIn('⛔ Não posso liberar para *'+v.pl+'*.\nMotivo: *'+v.motivo+'*.\nDesbloqueie o veículo no Portal do cliente (ou peça ao posto) e tente de novo. A tentativa fica registrada na auditoria.');
+        backToMenu();
+      }, td(1100));
+      return;
+    }
+    typing(function(){
+      bubbleIn('📍 Detectamos que você está no *Posto Morro Sorocaba*. Confirme a *bomba*:');
+      quickReplies([
+        {label:'Morro Sorocaba · Bomba 3', reply:'Morro Sorocaba · Bomba 3', onClick:function(){ libComb(v,'Posto Morro Sorocaba','Bomba 3'); }},
+        {label:'Morro Sorocaba · Bomba 5', reply:'Morro Sorocaba · Bomba 5', onClick:function(){ libComb(v,'Posto Morro Sorocaba','Bomba 5'); }},
+        {label:'Morro Tatuí · Bomba 1', reply:'Morro Tatuí · Bomba 1', onClick:function(){ libComb(v,'Posto Morro Tatuí','Bomba 1'); }},
+        {label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}
+      ]);
+    }, td(1000));
+  }
+  function libComb(v,posto,bomba){
+    typing(function(){
+      bubbleIn('Qual *combustível*?');
+      quickReplies([
+        {label:'⛽ Diesel S10', reply:'Diesel S10', onClick:function(){ libTeto(v,posto,bomba,'Diesel S10'); }},
+        {label:'⛽ Gasolina',   reply:'Gasolina',   onClick:function(){ libTeto(v,posto,bomba,'Gasolina'); }},
+        {label:'⛽ Etanol',     reply:'Etanol',     onClick:function(){ libTeto(v,posto,bomba,'Etanol'); }},
+        {label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}
+      ]);
+    }, td(900));
+  }
+  function libTeto(v,posto,bomba,comb){
+    typing(function(){
+      bubbleIn('Defina o *teto* desta liberação (segurança):');
+      quickReplies([
+        {label:'Até R$ 300', reply:'Até R$ 300', onClick:function(){ libEmite(v,posto,bomba,comb,'até R$ 300'); }},
+        {label:'Até R$ 500', reply:'Até R$ 500', onClick:function(){ libEmite(v,posto,bomba,comb,'até R$ 500'); }},
+        {label:'Até 200 L',  reply:'Até 200 L',  onClick:function(){ libEmite(v,posto,bomba,comb,'até 200 L'); }},
+        {label:'Sem teto',   reply:'Sem teto',   onClick:function(){ libEmite(v,posto,bomba,comb,'sem teto'); }},
+        {label:'↩️ Voltar ao menu', menu:true, reply:'Voltar ao menu', onClick:showMenu}
+      ]);
+    }, td(900));
+  }
+  function libEmite(v,posto,bomba,comb,teto){
+    // validação: status ativo + limite disponível
+    typing(function(){
+      bubbleIn('Validando... conferindo *limite* e *status do veículo* ⏳');
+      typing(function(){
+        var codigo=String(4000+Math.floor(Math.random()*1999)); // ex. 4821
+        var card='<div class="doccard">'+
+            '<div class="fi" style="border-color:#25D366"><svg viewBox="0 0 24 24" fill="none" stroke="#128C7E" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>'+
+            '<div class="di"><div class="t">'+bomba+' liberada</div>'+
+            '<div class="s">'+posto+'</div></div>'+
+          '</div>'+
+          '<div style="margin-top:4px; font-size:13px; line-height:1.5">'+
+            '🚚 Veículo: *'+v.pl+'* · <b style="color:#128C7E">ativo</b><br>'+
+            '⛽ '+comb+' · '+teto+'<br>'+
+            '💰 Limite disponível: *R$ 21.790* (ok)'+
+          '</div>'+
+          '<div class="codelabel" style="margin-top:8px">Código de retirada · informe ao frentista</div>'+
+          '<div class="codebox" style="text-align:center; font-size:22px; font-weight:800; letter-spacing:.35em; color:#128C7E; border-style:solid; border-color:#25D366">'+codigo+'</div>'+
+          '<div style="font-size:11.5px; color:#667781; margin-top:4px">⏱️ Válido por *10 min*. O abastecimento cai no *faturado* e gera *NFC-e* automaticamente.</div>';
+        var row=bubbleIn('✅ *Autorização emitida!*');
+        row.querySelector('.txt').insertAdjacentHTML('beforeend', card);
+        scrollDown();
+        typing(function(){
+          bubbleIn('Enviei a liberação pro *Edge da bomba* — vai aparecer como *"aguardando"* no PDV do posto até o frentista confirmar. Liberação registrada na *auditoria* 🔒');
+          backToMenu();
+        }, td(800));
+      }, td(1300));
+    }, td(1000));
+  }
+
+  // ---------- FLUXO: Atendente ----------
+  function fluxoAtendente(){
+    typing(function(){
+      bubbleIn('Encaminhei você para um atendente do posto. 🧑‍💼\nTempo médio de resposta: *4 min*.\nEnquanto isso, posso te ajudar com algo pelo menu?');
+      backToMenu();
+    }, td(1100));
+  }
+
+  // ---------- binds de cópia / download ----------
+  function bindDl(scope){
+    scope.querySelectorAll('[data-dl]').forEach(function(b){
+      b.addEventListener('click',function(){ toast(b.getAttribute('data-dl')); });
+    });
+  }
+  function bindCopy(scope){
+    scope.querySelectorAll('[data-copy]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var txt=b.getAttribute('data-copy');
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(txt).catch(function(){});
+        }
+        toast(b.getAttribute('data-ok'));
+      });
+    });
+  }
+
+  // ---------- input livre ----------
+  function sendFree(){
+    var v=input.value.trim();
+    if(!v||busy) return;
+    if(lastQR){ lastQR.remove(); lastQR=null; }
+    bubbleOut(v);
+    input.value='';
+    typing(function(){
+      bubbleIn('Não entendi 🙂 escolha uma das opções:');
+      quickReplies([
+        {label:'📄 2ª via de NF-e', onClick:fluxoNF},
+        {label:'💳 Boleto / PIX',   onClick:fluxoBoleto},
+        {label:'💰 Consultar limite', onClick:fluxoLimite},
+        {label:'⛽ Consumo da frota', onClick:fluxoConsumo},
+        {label:'⛽ Liberar abastecimento', onClick:fluxoLiberar},
+        {label:'🧑‍💼 Falar com atendente', onClick:fluxoAtendente}
+      ]);
+    }, td(900));
+  }
+  sendBtn.addEventListener('click',sendFree);
+  input.addEventListener('keydown',function(e){ if(e.key==='Enter') sendFree(); });
+
+  // ---------- boas-vindas ----------
+  function boot(){
+    typing(function(){
+      bubbleIn('Olá, *'+CLIENTE+'*! 👋\nSou o atendimento *Helix Fuel*. Reconheci você pelo número (cliente *CLI-0001* · convênio frota).');
+      typing(function(){
+        showMenu();
+      }, td(900));
+    }, td(900));
+  }
+  boot();
+})();
+</script>
