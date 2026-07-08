@@ -1,0 +1,182 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Portal do Cliente</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3;
+    --warn:#B7791F; --warn-tint:#F6EEDC;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 16px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:960px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 20px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe); flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .who{display:flex; align-items:center; gap:9px}
+  .who .av{width:32px; height:32px; border-radius:9px; background:var(--ink); color:#fff; display:grid; place-items:center; font-size:11px; font-weight:700}
+  .who .nm b{font-size:13px; font-weight:650; display:block; line-height:1.25}
+  .who .nm span{font-size:10.5px; color:var(--faint)}
+
+  .main{padding:20px}
+  .hello{margin:0 0 16px; font-size:13px; color:var(--muted)}
+  .hello b{color:var(--ink)}
+
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px}
+  @media(max-width:720px){ .kpis{grid-template-columns:1fr} }
+  .kpi{border:1px solid var(--line); border-radius:13px; padding:14px 16px; background:#fff}
+  .kpi .k{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .kpi .v{font-size:22px; font-weight:680; letter-spacing:-.02em; margin-top:4px}
+  .kpi .s{font-size:11.5px; color:var(--muted); margin-top:2px}
+  .limitbar{height:8px; border-radius:4px; background:var(--line-2); overflow:hidden; margin-top:9px}
+  .limitbar i{display:block; height:100%; background:var(--brand); border-radius:4px}
+
+  .card{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; margin-bottom:14px}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 16px 10px; flex-wrap:wrap}
+  .card .ch h2{margin:0; font-size:14.5px; font-weight:640}
+  .card .ch span{font-size:11.5px; color:var(--faint)}
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 16px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:11px 16px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .stbl b{font-weight:600}
+  .stbl small{display:block; color:var(--faint); font-size:11px}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .btn{font-family:inherit; font-size:11.5px; font-weight:650; padding:7px 12px; border-radius:9px; border:1px solid var(--line); background:#fff; color:var(--brand-ink); cursor:pointer; white-space:nowrap}
+  .btn:hover{border-color:var(--brand); background:var(--brand-tint)}
+  .btn.pri{background:var(--brand); border-color:var(--brand); color:#fff}
+  .btn.pri:hover{background:var(--brand-ink)}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .acts{display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap}
+
+  .plates{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:4px 16px 16px}
+  @media(max-width:720px){ .plates{grid-template-columns:1fr} }
+  .plate{border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:var(--surface-2)}
+  .plate .pl{font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--ink-2); background:#fff; border:1px solid var(--line); border-radius:5px; padding:1px 8px; display:inline-block}
+  .plate .v{font-size:15px; font-weight:660; margin-top:7px}
+  .plate .s{font-size:11px; color:var(--faint)}
+
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(8px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; opacity:0; pointer-events:none; transition:.25s; z-index:9; max-width:92vw; text-align:center}
+  .toast.show{opacity:1; transform:translateX(-50%)}
+
+  .caption{max-width:960px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Portal do cliente</span></div>
+    </div>
+    <div class="who"><div class="av">TR</div><div class="nm"><b>Transportes Rodovale Ltda</b><span>CNPJ 45.118.220/0001-05 · convênio frota</span></div></div>
+  </div>
+
+  <div class="main">
+    <p class="hello">Olá! Aqui você acompanha <b>consumo, limite, notas e boletos</b> da sua frota — sem ligar pro posto.</p>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="k">Limite de crédito</div>
+        <div class="v num">R$ 48.210 <span style="font-size:13px; color:var(--muted); font-weight:600">de R$ 70.000</span></div>
+        <div class="limitbar"><i style="width:69%"></i></div>
+        <div class="s num">R$ 21.790 disponíveis · renova no fechamento da fatura</div>
+      </div>
+      <div class="kpi">
+        <div class="k">Consumo em julho</div>
+        <div class="v num">12.480 L</div>
+        <div class="s">28 veículos · Diesel S10 · 4 postos da rede</div>
+      </div>
+      <div class="kpi">
+        <div class="k">Em aberto</div>
+        <div class="v num">R$ 48.210</div>
+        <div class="s"><span class="pill ok" style="margin-top:2px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>Em dia · próximo venc. 12/07</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2>Boletos</h2><span>híbridos — pague pela linha digitável ou pelo QR PIX</span></div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr><th>Fatura</th><th>Vencimento</th><th class="r">Valor</th><th>Status</th><th class="r"></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Fatura 07/2026 · quinzena 1</b><small>abastecimentos 01–15/07 · 6 notas</small></td>
+            <td>12/07/2026</td><td class="r num">R$ 48.210,00</td>
+            <td><span class="pill ok">Em aberto</span></td>
+            <td><div class="acts"><button class="btn" data-t="Linha digitável copiada — cole no seu internet banking">Copiar linha</button><button class="btn pri" data-t="QR PIX copia-e-cola copiado — pague em segundos">QR PIX</button></div></td>
+          </tr>
+          <tr>
+            <td><b>Fatura 06/2026 · quinzena 2</b><small>paga em 28/06 via PIX</small></td>
+            <td>28/06/2026</td><td class="r num">R$ 44.860,00</td>
+            <td><span class="pill ok">Paga</span></td>
+            <td><div class="acts"><button class="btn" data-t="Comprovante baixado em PDF">Comprovante</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2>Notas fiscais</h2><span>2ª via na hora — PDF e XML</span></div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr><th>Documento</th><th>Data</th><th class="r">Valor</th><th class="r"></th></tr></thead>
+        <tbody>
+          <tr><td><b>NF-e 12.847</b><small>Posto Morro Sorocaba · Diesel S10 · 2.140 L</small></td><td>05/07</td><td class="r num">R$ 13.032,60</td><td><div class="acts"><button class="btn" data-t="2ª via da NF-e 12.847 baixada em PDF">2ª via PDF</button><button class="btn" data-t="XML da NF-e 12.847 baixado">XML</button></div></td></tr>
+          <tr><td><b>NF-e 12.799</b><small>Posto Morro Tatuí · Diesel S10 · 1.860 L</small></td><td>03/07</td><td class="r num">R$ 11.327,40</td><td><div class="acts"><button class="btn" data-t="2ª via da NF-e 12.799 baixada em PDF">2ª via PDF</button><button class="btn" data-t="XML da NF-e 12.799 baixado">XML</button></div></td></tr>
+          <tr><td><b>NF-e 12.752</b><small>Posto Morro Itu · Diesel S10 · 2.310 L</small></td><td>01/07</td><td class="r num">R$ 14.067,90</td><td><div class="acts"><button class="btn" data-t="2ª via da NF-e 12.752 baixada em PDF">2ª via PDF</button><button class="btn" data-t="XML da NF-e 12.752 baixado">XML</button></div></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2>Consumo por veículo · julho</h2><span>identificado pela placa no momento do abastecimento</span></div>
+      <div class="plates">
+        <div class="plate"><span class="pl">FROTA-07</span><div class="v num">2.140 L · R$ 13.032</div><div class="s">últ. abastecimento: hoje 14h · Sorocaba</div></div>
+        <div class="plate"><span class="pl">FROTA-12</span><div class="v num">1.980 L · R$ 12.058</div><div class="s">últ.: ontem 09h · Tatuí</div></div>
+        <div class="plate"><span class="pl">FROTA-03</span><div class="v num">1.740 L · R$ 10.597</div><div class="s">últ.: 05/07 · Itu</div></div>
+        <div class="plate"><span class="pl">FROTA-21</span><div class="v num">1.520 L · R$ 9.257</div><div class="s">últ.: 04/07 · Sorocaba</div></div>
+        <div class="plate"><span class="pl">FROTA-15</span><div class="v num">1.310 L · R$ 7.978</div><div class="s">últ.: 04/07 · Boituva</div></div>
+        <div class="plate" style="display:grid; place-items:center"><button class="btn" data-t="Relatório completo da frota exportado em CSV">Ver os 28 veículos →</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<p class="caption">Protótipo Helix Fuel · Portal do cliente (requisito da PO). &nbsp;<b>2ª via de NF, boleto híbrido com QR PIX, consumo por placa e limite em tempo real — o cliente se serve sozinho, o posto para de atender telefone.</b></p>
+
+<script>
+(function(){
+  let tmr;
+  const t=document.getElementById('toast');
+  document.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>{
+    t.textContent=b.dataset.t; t.classList.add('show');
+    clearTimeout(tmr); tmr=setTimeout(()=>t.classList.remove('show'),2400);
+  }));
+})();
+</script>

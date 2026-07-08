@@ -1,0 +1,244 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Cadastros · Rede (70 postos)</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3;
+    --warn:#B7791F; --warn-tint:#F6EEDC; --warn-line:#E6D4A8;
+    --gas:#CE8A2C; --adit:#9C6B14; --etanol:#2E9E6B; --diesel:#1B6E8C;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1220px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .fleet{display:flex; gap:20px}
+  .fleet .f{text-align:right}
+  .fleet .f .v{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; line-height:1.1}
+  .fleet .f .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .fleet .f.warn .v{color:var(--warn)}
+  @media(max-width:820px){ .fleet{display:none} }
+
+  .shell{display:grid; grid-template-columns:360px 1fr; min-height:600px}
+  @media(max-width:860px){ .shell{grid-template-columns:1fr} }
+
+  /* left: fleet list */
+  .list{border-right:1px solid var(--line); background:var(--surface-2); display:flex; flex-direction:column; max-height:760px}
+  .tools{padding:14px 14px 10px; border-bottom:1px solid var(--line)}
+  .search{position:relative; margin-bottom:10px}
+  .search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--faint)}
+  .search input{width:100%; font-family:inherit; font-size:13.5px; padding:9px 12px 9px 34px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink)}
+  .search input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{font-family:inherit; font-size:11px; font-weight:650; padding:5px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer}
+  .chip:hover{border-color:var(--brand)}
+  .chip.on{background:var(--brand); border-color:var(--brand); color:#fff}
+  .chip.pend{color:var(--warn)}
+  .chip.pend.on{background:var(--warn); border-color:var(--warn); color:#fff}
+  .chip:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .lcount{padding:8px 16px 4px; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .rows{flex:1; overflow-y:auto; padding:4px 8px 12px}
+  .prow{width:100%; display:flex; align-items:center; gap:10px; border:0; background:transparent; font-family:inherit; padding:10px 10px; border-radius:10px; cursor:pointer; text-align:left; transition:.12s}
+  .prow:hover{background:#e7ebf5}
+  .prow[aria-current="true"]{background:var(--brand)}
+  .prow[aria-current="true"] b, .prow[aria-current="true"] .cts{color:#fff}
+  .prow[aria-current="true"] small{color:rgba(255,255,255,.72)}
+  .prow .st{width:8px; height:8px; border-radius:50%; flex:none}
+  .prow .in{flex:1; min-width:0}
+  .prow b{display:block; font-size:13px; font-weight:600; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3}
+  .prow small{font-size:10.5px; color:var(--faint)}
+  .prow .cts{font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600}
+  .prow:focus-visible{outline:2px solid var(--brand); outline-offset:-2px}
+
+  /* right: detail */
+  .detail{padding:22px 24px; overflow-y:auto; max-height:760px}
+  .crumb{font-size:11.5px; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .detail h1{margin:0 0 2px; font-size:20px; font-weight:660; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.bad{color:var(--bad); background:var(--bad-tint)}
+  .lead{font-size:12.5px; color:var(--muted); margin:0 0 14px}
+  .pendbox{display:flex; gap:12px; align-items:center; border:1px solid var(--warn-line); background:var(--warn-tint); border-radius:12px; padding:11px 14px; margin-bottom:14px}
+  .pendbox svg{width:18px; height:18px; color:var(--warn); flex:none}
+  .pendbox b{font-size:13px; font-weight:650}
+  .pendbox span{font-size:11.5px; color:var(--muted); display:block}
+  .pendbox button{margin-left:auto; font-family:inherit; font-size:11.5px; font-weight:650; padding:7px 13px; border-radius:9px; border:1px solid var(--brand); background:#fff; color:var(--brand-ink); cursor:pointer; white-space:nowrap}
+  .pendbox button:hover{background:var(--brand-tint)}
+
+  .props{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px}
+  @media(max-width:760px){ .props{grid-template-columns:repeat(2,1fr)} }
+  .prop{border:1px solid var(--line); border-radius:12px; padding:11px 13px; background:var(--surface-2)}
+  .prop .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .prop .v{font-size:13px; font-weight:640; margin-top:2px}
+  .prop .v small{font-weight:500; color:var(--muted); font-size:11px}
+  .prop.warn{border-color:var(--warn-line); background:var(--warn-tint)}
+
+  .rel{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:12px}
+  .rel .rh{padding:10px 14px 8px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); border-bottom:1px solid var(--line-2); background:#fff; display:flex; justify-content:space-between}
+  .rel .rh span{color:var(--faint); font-weight:600; text-transform:none; letter-spacing:0}
+  .rel .rr{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line-2); font-size:12.5px; background:#fff; flex-wrap:wrap}
+  .rel .rr:last-child{border-bottom:0}
+  .rel .rr .dot{width:8px; height:8px; border-radius:50%; flex:none}
+  .rel .rr b{font-weight:600}
+  .rel .rr .r{margin-left:auto; color:var(--muted); font-size:11.5px; font-variant-numeric:tabular-nums}
+  .bchips{display:flex; gap:6px; flex-wrap:wrap; margin-left:18px}
+  .bchip{font-size:10.5px; font-weight:650; padding:3px 9px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); display:inline-flex; align-items:center; gap:6px}
+  .bchip .dot{width:7px; height:7px; border-radius:50%}
+  .bchip.miss{border-color:var(--warn-line); background:var(--warn-tint); color:var(--warn)}
+
+  .caption{max-width:1220px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Cadastros · estrutura da rede</span></div>
+    </div>
+    <div class="fleet" id="fleet"></div>
+  </div>
+
+  <div class="shell">
+    <div class="list">
+      <div class="tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="search" placeholder="Buscar posto, cidade, CNPJ…" aria-label="Buscar posto">
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="lcount" id="lcount"></div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <div class="detail" id="detail"></div>
+  </div>
+</div>
+
+<p class="caption">Protótipo Helix Fuel · Cadastros em escala de rede. &nbsp;<b>70 postos: busca, filtro por praça e fila de pendências cadastrais primeiro — o drill-down 1-a-1 (tanque → bomba → bico) só depois de escolher o posto.</b></p>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+
+  // deterministic data for 70 postos
+  const CITIES=['Tatuí','Cerquilho','Boituva','Tietê','Porto Feliz','Itu','Salto','Sorocaba','Votorantim','Itapetininga','Capão Bonito','Itapeva','Avaré','Botucatu','Piraju','Ourinhos','Assis','Marília','Garça','Tupã','Lins','Bauru','Jaú','Barra Bonita','Lençóis Paulista','Agudos','Pederneiras','Brotas','São Carlos','Araraquara','Matão','Taquaritinga','Jaboticabal','Sertãozinho','Ribeirão Preto','Batatais','Franca','Ituverava','Orlândia','Bebedouro','Barretos','Olímpia','Catanduva','José Bonifácio','Mirassol','Rio Preto','Votuporanga','Fernandópolis','Jales','Andradina','Araçatuba','Birigui','Penápolis','Promissão','Pres. Prudente','Dracena','Adamantina','Rancharia','Paraguaçu','Cândido Mota','Palmital','Piracicaba','Limeira','Rio Claro','Americana','Campinas','Indaiatuba','Valinhos','Vinhedo','Jundiaí'];
+  const REGIONS=['Sorocaba','Centro-Oeste','Norte','Noroeste','Campinas'];
+  const FLAGS=['Ipiranga','Branca','Vibra','Shell'];
+  const PRODUCTS=[['Gasolina comum','var(--gas)','R$ 5,89'],['Gasolina aditivada','var(--adit)','R$ 6,19'],['Etanol','var(--etanol)','R$ 4,29'],['Diesel S10','var(--diesel)','R$ 6,09']];
+  const PEND={4:'Certificado A1 vence em 9 dias',11:'Tanque T3 sem sonda vinculada',19:'Bico 6 sem produto vinculado',23:'Série NFC-e não configurada',37:'Certificado A1 vence em 21 dias',42:'Bomba 3 sem lacre INMETRO registrado',55:'Tanque T1 sem teste de estanqueidade vigente',63:'CNAE secundário pendente na PJ'};
+  const OFFLINE=new Set([12,48]);
+
+  let s=42; const rnd=()=> (s=(s*1103515245+12345)%2147483648)/2147483648;
+  const POSTOS=CITIES.map((c,i)=>{
+    const nb=2+Math.floor(rnd()*3);            // bombas 2-4
+    const nt=3+Math.floor(rnd()*3);            // tanques 3-5
+    return {i, nm:'Posto Morro '+c, cidade:c+' / SP', reg:REGIONS[i%5], flag:FLAGS[Math.floor(rnd()*4)],
+      nt, nb, bicos:nb*2, pend:PEND[i]||null, off:OFFLINE.has(i),
+      cnpj:`12.345.678/${String(i+1).padStart(4,'0')}-${String(10+i%80).padStart(2,'0')}`};
+  });
+
+  const T={tan:POSTOS.reduce((a,p)=>a+p.nt,0), bom:POSTOS.reduce((a,p)=>a+p.nb,0), bic:POSTOS.reduce((a,p)=>a+p.bicos,0), pend:Object.keys(PEND).length};
+  $('fleet').innerHTML=`
+    <div class="f"><div class="v num">70</div><div class="k">Postos</div></div>
+    <div class="f"><div class="v num">${T.tan}</div><div class="k">Tanques</div></div>
+    <div class="f"><div class="v num">${T.bom}</div><div class="k">Bombas</div></div>
+    <div class="f"><div class="v num">${T.bic}</div><div class="k">Bicos</div></div>
+    <div class="f warn"><div class="v num">${T.pend}</div><div class="k">Pendências</div></div>`;
+
+  let filter='all', query='', current=0;
+
+  const CHIPS=[['all','Todos · 70'],['pend',`Pendências · ${T.pend}`],...REGIONS.map(r=>[r, r+' · '+POSTOS.filter(p=>p.reg===r).length])];
+  function renderChips(){
+    $('chips').innerHTML=CHIPS.map(c=>`<button class="chip ${c[0]==='pend'?'pend':''} ${filter===c[0]?'on':''}" data-f="${c[0]}">${c[1]}</button>`).join('');
+    $('chips').querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset.f; renderChips(); renderRows(); }));
+  }
+
+  function filtered(){
+    return POSTOS.filter(p=>{
+      if(filter==='pend' && !p.pend) return false;
+      if(REGIONS.includes(filter) && p.reg!==filter) return false;
+      if(query && !(p.nm+' '+p.cidade+' '+p.cnpj).toLowerCase().includes(query)) return false;
+      return true;
+    });
+  }
+
+  function renderRows(){
+    const list=filtered();
+    $('lcount').textContent=list.length+' de 70 postos';
+    $('rows').innerHTML=list.map(p=>`
+      <button class="prow" data-i="${p.i}" aria-current="${p.i===current}">
+        <span class="st" style="background:${p.pend?'var(--warn)':p.off?'var(--bad)':'var(--ok)'}"></span>
+        <span class="in"><b>${p.nm}</b><small>${p.cidade} · ${p.reg}${p.pend?' · ⚠ pendência':''}</small></span>
+        <span class="cts">${p.nt}T · ${p.nb}B · ${p.bicos}b</span>
+      </button>`).join('');
+    $('rows').querySelectorAll('.prow').forEach(b=>b.addEventListener('click',()=>{ current=+b.dataset.i; renderRows(); renderDetail(); }));
+  }
+
+  $('q').addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); renderRows(); });
+
+  function renderDetail(){
+    const p=POSTOS[current];
+    let s2=100+p.i; const r2=()=> (s2=(s2*1103515245+12345)%2147483648)/2147483648;
+    const tanks=Array.from({length:p.nt},(_,k)=>{
+      const pr=PRODUCTS[k%4], cap=[15000,20000,25000,30000][Math.floor(r2()*4)];
+      const noSonda=p.pend&&p.pend.includes('sonda')&&k===2;
+      return {id:'T'+(k+1), pr, cap, sonda:!noSonda};
+    });
+    const pumps=Array.from({length:p.nb},(_,k)=>{
+      const fab=['Wayne Helix 6000','Gilbarco Veeder','Tokheim Quantium'][Math.floor(r2()*3)];
+      const bicos=[0,1].map(j=>{ const pr=PRODUCTS[(k*2+j)%4]; const miss=p.pend&&p.pend.includes('Bico 6')&&(k*2+j+1)===6; return {n:k*2+j+1, pr, miss}; });
+      return {id:'Bomba '+(k+1), fab, bicos};
+    });
+    $('detail').innerHTML=`
+      <div class="crumb">${p.reg} · estabelecimento (Branch) da Morro Combustíveis Ltda</div>
+      <h1>${p.nm}
+        ${p.pend?'<span class="pill warn">Pendência cadastral</span>':'<span class="pill ok">Cadastro completo</span>'}
+        ${p.off?'<span class="pill bad">Edge offline</span>':''}
+      </h1>
+      <p class="lead">${p.cidade} · bandeira ${p.flag} · ${p.nt} tanques, ${p.nb} bombas, ${p.bicos} bicos</p>
+      ${p.pend?`<div class="pendbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><b>${p.pend}</b><span>Bloqueia o checklist de conformidade do posto — resolver antes do go-live da unidade.</span></div><button>Resolver agora →</button></div>`:''}
+      <div class="props">
+        <div class="prop"><div class="k">CNPJ</div><div class="v num">${p.cnpj}</div></div>
+        <div class="prop"><div class="k">Inscrição estadual</div><div class="v num">412.${String(100+p.i)}.556.${String(100+p.i*3).slice(0,3)}</div></div>
+        <div class="prop ${p.pend&&p.pend.includes('Série')?'warn':''}"><div class="k">Série NFC-e</div><div class="v">${p.pend&&p.pend.includes('Série')?'— não configurada':'1 · próx. nº '+(40000+p.i*113).toLocaleString('pt-BR')}</div></div>
+        <div class="prop ${p.pend&&p.pend.includes('Certificado')?'warn':''}"><div class="k">Certificado A1</div><div class="v">${p.pend&&p.pend.includes('Certificado')?p.pend.replace('Certificado A1 ','⚠ '):'válido até '+['10/2026','01/2027','11/2026','03/2027'][p.i%4]}</div></div>
+        <div class="prop"><div class="k">Edge Gateway</div><div class="v">${p.off?'<span style="color:var(--bad)">offline há 22 min</span>':'online · edge-'+p.cidade.toLowerCase().replace(/[^a-z]/g,'').slice(0,8)+'-01'}</div></div>
+        <div class="prop"><div class="k">Dia operacional</div><div class="v">06h00 → 06h00</div></div>
+      </div>
+      <div class="rel"><div class="rh">Tanques <span>${p.nt} unidades</span></div>
+        ${tanks.map(t=>`<div class="rr"><span class="dot" style="background:${t.pr[1]}"></span><b>${t.id} · ${t.pr[0]}</b><span class="r">${t.cap.toLocaleString('pt-BR')} L · ${t.sonda?'sonda online':'<span style="color:var(--warn);font-weight:700">sem sonda ⚠</span>'}</span></div>`).join('')}
+      </div>
+      <div class="rel"><div class="rh">Bombas &amp; bicos <span>${p.nb} bombas · ${p.bicos} bicos</span></div>
+        ${pumps.map(b=>`<div class="rr" style="align-items:flex-start; flex-direction:column; gap:7px">
+          <div style="display:flex; align-items:center; gap:10px; width:100%"><b>${b.id}</b><span style="font-size:11px;color:var(--faint)">${b.fab}</span><span class="r">adapter Go · ADR-004</span></div>
+          <div class="bchips">${b.bicos.map(x=>`<span class="bchip ${x.miss?'miss':''}"><span class="dot" style="background:${x.miss?'var(--warn)':x.pr[1]}"></span>Bico ${x.n} · ${x.miss?'sem produto ⚠':x.pr[0]+' · '+x.pr[2]}</span>`).join('')}</div>
+        </div>`).join('')}
+      </div>`;
+    $('detail').scrollTop=0;
+  }
+
+  renderChips(); renderRows(); renderDetail();
+})();
+</script>

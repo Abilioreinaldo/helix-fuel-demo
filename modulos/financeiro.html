@@ -1,0 +1,232 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Financeiro</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3;
+    --warn:#B7791F; --warn-tint:#F6EEDC;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1180px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .tb-right{font-size:12.5px; color:var(--muted)}
+
+  .main{padding:22px 24px 28px}
+  .phead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap}
+  .phead h1{margin:0; font-size:21px; font-weight:660; letter-spacing:-.02em}
+  .phead .crumb{font-size:11.5px; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .seg{display:flex; gap:2px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .seg button{border:0; background:transparent; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--muted); padding:6px 14px; border-radius:6px; cursor:pointer}
+  .seg button.on{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .seg button:focus-visible{outline:2px solid var(--brand); outline-offset:-2px}
+
+  .view{display:none} .view[data-on]{display:block; animation:rise .24s ease}
+  @keyframes rise{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){ .view[data-on]{animation:none} }
+
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px}
+  @media(max-width:860px){ .kpis{grid-template-columns:1fr} }
+  .kpi{border:1px solid var(--line); border-radius:13px; padding:14px 16px; background:#fff}
+  .kpi .k{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .kpi .v{font-size:24px; font-weight:680; letter-spacing:-.02em; margin-top:4px}
+  .kpi .s{font-size:11.5px; color:var(--muted); margin-top:2px}
+  .kpi.pos .v{color:var(--ok)} .kpi.neg .v{color:var(--bad)}
+
+  .card{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; margin-bottom:14px}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px}
+  .card .ch h2{margin:0; font-size:14.5px; font-weight:640}
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 16px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:11px 16px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .stbl tr:hover td{background:var(--surface-2)}
+  .stbl .nn b{font-weight:600}
+  .stbl .nn small{display:block; color:var(--faint); font-size:11px}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.bad{color:var(--bad); background:var(--bad-tint)}
+  .pill .pip{width:6px; height:6px; border-radius:50%; background:currentColor}
+  .btn{font-family:inherit; font-size:11.5px; font-weight:650; padding:6px 12px; border-radius:8px; border:1px solid var(--brand); background:#fff; color:var(--brand-ink); cursor:pointer}
+  .btn:hover{background:var(--brand-tint)}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .flowbar{padding:6px 16px 16px}
+  .fb{display:flex; height:16px; border-radius:6px; overflow:hidden; margin-bottom:10px}
+  .fb i{height:100%}
+  .fleg{display:flex; gap:20px; flex-wrap:wrap}
+  .fleg .it{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-2)}
+  .fleg .it .dot{width:9px; height:9px; border-radius:2px}
+  .fleg .it b{font-variant-numeric:tabular-nums; font-weight:650}
+
+  .caption{max-width:1180px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Financeiro</span></div>
+    </div>
+    <div class="tb-right">Morro Combustíveis Ltda · Itaú ag 0912</div>
+  </div>
+
+  <div class="main">
+    <div class="phead">
+      <div><div class="crumb">Grupo Morro · consolidado</div><h1>Financeiro</h1></div>
+      <div class="seg" role="tablist">
+        <button class="on" data-v="dia">Visão do dia</button>
+        <button data-v="rec">A receber</button>
+        <button data-v="pag">A pagar</button>
+      </div>
+    </div>
+
+    <!-- DIA -->
+    <section class="view" data-view="dia" data-on>
+      <div class="kpis">
+        <div class="kpi pos"><div class="k">Entradas de hoje</div><div class="v num">R$ 5,41 mi</div><div class="s">70 postos · vindas dos fechamentos de turno</div></div>
+        <div class="kpi neg"><div class="k">Saídas de hoje</div><div class="v num">R$ 3,28 mi</div><div class="s">cargas de combustível + despesas</div></div>
+        <div class="kpi"><div class="k">Saldo projetado (D+1)</div><div class="v num">R$ 8,94 mi</div><div class="s">após liquidação de cartões D+1</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>De onde veio o dinheiro · hoje · rede</h2><span style="font-size:11.5px;color:var(--faint)">conciliado com 129 fechamentos de turno</span></div>
+        <div class="flowbar">
+          <div class="fb">
+            <i style="width:37%; background:#9C6B14"></i><i style="width:24%; background:#1B6E8C"></i><i style="width:19%; background:#2E9E6B"></i><i style="width:12%; background:#3A5CD8"></i><i style="width:8%; background:#8A90A2"></i>
+          </div>
+          <div class="fleg">
+            <span class="it"><span class="dot" style="background:#9C6B14"></span>Crédito <b>R$ 2,00 mi</b> <small style="color:var(--faint)">D+1</small></span>
+            <span class="it"><span class="dot" style="background:#1B6E8C"></span>Débito <b>R$ 1,30 mi</b></span>
+            <span class="it"><span class="dot" style="background:#2E9E6B"></span>PIX <b>R$ 1,03 mi</b></span>
+            <span class="it"><span class="dot" style="background:#3A5CD8"></span>Dinheiro <b>R$ 0,65 mi</b></span>
+            <span class="it"><span class="dot" style="background:#8A90A2"></span>Faturado <b>R$ 0,43 mi</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>Auditor de taxas · adquirentes</h2><span style="font-size:11.5px;color:var(--faint)">taxa cobrada × contratada, transação a transação</span></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Modalidade · adquirente</th><th class="r">Contratada</th><th class="r">Cobrada</th><th class="r">Divergência no mês</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="nn"><b>Crédito à vista · Stone</b></td><td class="r num">1,49%</td><td class="r num">1,49%</td><td class="r num" style="color:var(--ok);font-weight:650">exato</td><td></td></tr>
+            <tr><td class="nn"><b>Crédito parcelado · Stone</b><small>412 transações auditadas</small></td><td class="r num">2,39%</td><td class="r num" style="color:var(--bad);font-weight:700">2,54%</td><td class="r num" style="color:var(--bad);font-weight:700">+R$ 1.842,30</td><td class="r"><button class="btn" id="contestar">Gerar contestação</button></td></tr>
+            <tr><td class="nn"><b>Débito · Cielo</b></td><td class="r num">0,99%</td><td class="r num">0,99%</td><td class="r num" style="color:var(--ok);font-weight:650">exato</td><td></td></tr>
+            <tr><td class="nn"><b>PIX · Itaú</b></td><td class="r num">0,00%</td><td class="r num">0,00%</td><td class="r num" style="color:var(--ok);font-weight:650">exato</td><td></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>Próximos vencimentos</h2></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Título</th><th>Vencimento</th><th class="r">Valor</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="nn"><b>Carga Diesel S10 · Ipiranga</b><small>NF-e 48.213 · boleto</small></td><td>Amanhã</td><td class="r num">R$ 91.350,00</td><td><span class="pill warn"><span class="pip"></span>Programado</span></td></tr>
+            <tr><td class="nn"><b>Energia · CPFL Tatuí</b><small>débito automático</small></td><td>10/07</td><td class="r num">R$ 8.420,15</td><td><span class="pill ok"><span class="pip"></span>Agendado</span></td></tr>
+            <tr><td class="nn"><b>ICMS-ST apuração junho</b><small>GARE</small></td><td>15/07</td><td class="r num">R$ 64.980,00</td><td><span class="pill ok"><span class="pip"></span>Provisionado</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- A RECEBER -->
+    <section class="view" data-view="rec">
+      <div class="kpis">
+        <div class="kpi"><div class="k">Carteira faturada · rede</div><div class="v num">R$ 2,48 mi</div><div class="s">246 clientes · frotas e convênios</div></div>
+        <div class="kpi neg"><div class="k">Vencido</div><div class="v num">R$ 186.400</div><div class="s">14 clientes em atraso — 4 maiores abaixo</div></div>
+        <div class="kpi"><div class="k">Liquidação de cartões amanhã</div><div class="v num">R$ 2,00 mi</div><div class="s">crédito D+1 · adquirente Stone</div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><h2>Clientes faturados</h2><span style="font-size:11.5px;color:var(--faint)">cobrança por boleto híbrido (linha digitável + QR PIX) via API bancária — sem remessa/retorno</span></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Cliente</th><th>Notas em aberto</th><th>Vencimento</th><th class="r">Valor</th><th>Status</th><th></th></tr></thead>
+          <tbody id="rec-body">
+            <tr><td class="nn"><b>Transportes Rodovale</b><small>frota 28 veículos · Diesel</small></td><td class="num">6</td><td>12/07</td><td class="r num">R$ 48.210,00</td><td><span class="pill ok"><span class="pip"></span>Em dia</span></td><td></td></tr>
+            <tr data-late="1"><td class="nn"><b>Prefeitura de Tatuí</b><small>convênio · empenho 2210/26</small></td><td class="num">3</td><td>28/06</td><td class="r num">R$ 9.640,00</td><td><span class="pill bad"><span class="pip"></span>Vencido 9d</span></td><td class="r"><button class="btn">Registrar recebimento</button></td></tr>
+            <tr><td class="nn"><b>Agro Boituva Máquinas</b><small>faturamento quinzenal</small></td><td class="num">4</td><td>15/07</td><td class="r num">R$ 22.870,00</td><td><span class="pill ok"><span class="pip"></span>Em dia</span></td><td></td></tr>
+            <tr data-late="2"><td class="nn"><b>Viação Cerquilho</b><small>frota 11 ônibus</small></td><td class="num">2</td><td>01/07</td><td class="r num">R$ 3.220,00</td><td><span class="pill bad"><span class="pip"></span>Vencido 6d</span></td><td class="r"><button class="btn">Registrar recebimento</button></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- A PAGAR -->
+    <section class="view" data-view="pag">
+      <div class="kpis">
+        <div class="kpi"><div class="k">A pagar · 7 dias</div><div class="v num">R$ 2,74 mi</div><div class="s">48 títulos · maiores abaixo</div></div>
+        <div class="kpi"><div class="k">Combustível (mês)</div><div class="v num">R$ 31,2 mi</div><div class="s">82% do custo total da rede</div></div>
+        <div class="kpi pos"><div class="k">Prazo médio distribuidora</div><div class="v num">7 <small style="font-size:13px">dias</small></div><div class="s">Ipiranga · à vista tem 0,9% desc.</div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><h2>Títulos a pagar</h2></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Fornecedor</th><th>Origem</th><th>Vencimento</th><th class="r">Valor</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="nn"><b>Distribuidora Ipiranga</b><small>15.000 L Diesel S10</small></td><td>NF-e 48.213 · recebida hoje</td><td>Amanhã</td><td class="r num">R$ 91.350,00</td><td><span class="pill warn"><span class="pip"></span>Programado</span></td></tr>
+            <tr><td class="nn"><b>Raízen</b><small>10.000 L Etanol</small></td><td>Pedido #1182</td><td>14/07</td><td class="r num">R$ 42.980,00</td><td><span class="pill ok"><span class="pip"></span>Aguarda entrega</span></td></tr>
+            <tr><td class="nn"><b>Atacadão Conveniência</b><small>reposição loja</small></td><td>NF-e 8.114</td><td>11/07</td><td class="r num">R$ 12.420,00</td><td><span class="pill ok"><span class="pip"></span>Em aberto</span></td></tr>
+            <tr><td class="nn"><b>CPFL Paulista</b><small>energia · 2 unidades</small></td><td>Fatura 06/2026</td><td>10/07</td><td class="r num">R$ 8.420,15</td><td><span class="pill ok"><span class="pip"></span>Débito automático</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<p class="caption">Protótipo Helix Fuel · Financeiro consolidado da rede (70 postos): <b>entradas nascem dos 140 fechamentos diários já conciliados — nada redigitado; as tabelas mostram só os maiores títulos e desvios.</b></p>
+
+<script>
+(function(){
+  const tabs=document.querySelectorAll('.seg button');
+  const views=document.querySelectorAll('.view');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.toggle('on', x===t));
+    views.forEach(v=> v.dataset.view===t.dataset.v ? v.setAttribute('data-on','') : v.removeAttribute('data-on'));
+  }));
+  // registrar recebimento -> baixa o título
+  document.querySelectorAll('#rec-body .btn').forEach(b=>b.addEventListener('click',()=>{
+    const tr=b.closest('tr');
+    tr.querySelector('.pill').outerHTML='<span class="pill ok"><span class="pip"></span>Recebido hoje</span>';
+    b.remove();
+  }));
+  // auditor de taxas -> contestação
+  const ct=document.getElementById('contestar');
+  if(ct) ct.addEventListener('click',()=>{
+    ct.outerHTML='<span class="pill warn"><span class="pip"></span>Contestação aberta na Stone · protocolo 88.412</span>';
+  });
+})();
+</script>

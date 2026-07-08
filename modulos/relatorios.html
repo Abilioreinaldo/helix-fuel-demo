@@ -1,0 +1,320 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Relatórios & Análises</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA; --warn:#B7791F; --warn-tint:#F6EEDC; --bad:#C0392B;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1220px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .cover{font-size:12px; color:var(--muted); text-align:right}
+  .cover b{color:var(--ok); font-weight:700}
+
+  .shell{display:grid; grid-template-columns:250px 1fr; min-height:640px}
+  @media(max-width:860px){ .shell{grid-template-columns:1fr} .side{display:none} }
+
+  .side{border-right:1px solid var(--line); background:var(--surface-2); padding:16px 10px}
+  .side .t{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:0 12px 8px}
+  .cat{width:100%; display:flex; align-items:center; gap:9px; border:0; background:transparent; font-family:inherit; font-size:13px; color:var(--ink-2); font-weight:500; padding:8px 12px; border-radius:9px; cursor:pointer; text-align:left}
+  .cat:hover{background:#e7ebf5}
+  .cat.on{background:var(--brand); color:#fff; font-weight:600}
+  .cat .n{margin-left:auto; font-size:10.5px; color:var(--faint); font-weight:700; font-variant-numeric:tabular-nums}
+  .cat.on .n{color:rgba(255,255,255,.75)}
+  .cat:focus-visible{outline:2px solid var(--brand); outline-offset:-2px}
+
+  .main{padding:20px 24px 28px; min-width:0}
+  .search{position:relative; margin-bottom:12px; max-width:520px}
+  .search svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--faint)}
+  .search input{width:100%; font-family:inherit; font-size:14px; padding:11px 13px 11px 38px; border:1px solid var(--line); border-radius:11px; background:#fff}
+  .search input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+
+  .saved{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px; align-items:center}
+  .saved .lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700; margin-right:2px}
+  .sv{font-family:inherit; font-size:11.5px; font-weight:650; padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--brand-ink); cursor:pointer}
+  .sv:hover{border-color:var(--brand); background:var(--brand-tint)}
+  .sv .by{color:var(--faint); font-weight:500}
+
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  @media(max-width:760px){ .grid{grid-template-columns:1fr} }
+  .rep{border:1px solid var(--line); border-radius:13px; background:#fff; padding:13px 15px; cursor:pointer; text-align:left; font-family:inherit; transition:.13s; display:flex; flex-direction:column; gap:5px}
+  .rep:hover{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint); transform:translateY(-1px)}
+  .rep:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .rep b{font-size:13.5px; font-weight:650; line-height:1.35}
+  .rep .d{font-size:11.5px; color:var(--muted); line-height:1.45}
+  .rep .foot{display:flex; align-items:center; gap:8px; margin-top:3px}
+  .tagc{font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--faint)}
+  .cover-pill{margin-left:auto; font-size:10px; font-weight:700; color:var(--ok); background:var(--ok-tint); padding:2px 8px; border-radius:999px; white-space:nowrap}
+
+  /* explorer */
+  .exp{display:none}
+  .exp.on{display:block; animation:rise .22s ease}
+  .cat-list.off,.search.off,.saved.off,.grid.off{display:none}
+  @keyframes rise{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){ .exp.on{animation:none} }
+  .back{font-family:inherit; border:0; background:none; color:var(--brand-ink); font-size:12.5px; font-weight:650; cursor:pointer; padding:0; margin-bottom:10px; display:inline-flex; align-items:center; gap:6px}
+  .back:hover{text-decoration:underline}
+  .exp h1{margin:0 0 3px; font-size:19px; font-weight:660; letter-spacing:-.02em}
+  .exp .sub{font-size:12px; color:var(--muted); margin:0 0 14px}
+  .exp .sub b{color:var(--ok)}
+
+  .fbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .fctl{display:flex; flex-direction:column; gap:4px}
+  .fctl label{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .fctl select{font-family:inherit; font-size:12.5px; font-weight:600; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); min-width:130px}
+  .fctl select:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+
+  .dims{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; align-items:center}
+  .dims .lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .dim{font-family:inherit; font-size:11.5px; font-weight:650; padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer}
+  .dim.on{background:var(--brand); border-color:var(--brand); color:#fff}
+  .dim:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .card{border:1px solid var(--line); border-radius:13px; background:#fff; overflow:hidden; margin-bottom:12px}
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:9px 16px; border-bottom:1px solid var(--line); background:var(--surface-2)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:10px 16px; border-bottom:1px solid var(--line-2)}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .stbl tfoot td{padding:11px 16px; font-weight:680; border-top:2px solid var(--line)}
+  .bar{display:inline-block; height:7px; border-radius:4px; background:var(--brand); opacity:.35; vertical-align:middle; margin-left:8px}
+
+  .acts{display:flex; gap:9px; flex-wrap:wrap}
+  .btn{font-family:inherit; font-size:12.5px; font-weight:650; padding:9px 16px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer}
+  .btn:hover{border-color:var(--brand); color:var(--brand-ink)}
+  .btn.pri{background:var(--brand); border-color:var(--brand); color:#fff}
+  .btn.pri:hover{background:var(--brand-ink)}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; opacity:0; pointer-events:none; transition:.25s; z-index:9; max-width:90vw; text-align:center}
+  .toast.show{opacity:1; transform:translateX(-50%)}
+
+  .caption{max-width:1220px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Relatórios &amp; análises · rede 70 postos</span></div>
+    </div>
+    <div class="cover">Catálogo do sistema anterior: 370 relatórios<br><b id="cover-n"></b></div>
+  </div>
+
+  <div class="shell">
+    <nav class="side cat-list" id="side">
+      <div class="t">Domínios</div>
+      <div id="cats"></div>
+    </nav>
+
+    <main class="main">
+      <!-- catálogo -->
+      <div class="search" id="searchbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="search" placeholder="Buscar análise… (ex.: encerrante, faltas e sobras, curva ABC, EFD)" aria-label="Buscar análise">
+      </div>
+      <div class="saved" id="saved"></div>
+      <div class="grid" id="grid"></div>
+
+      <!-- explorador -->
+      <div class="exp" id="exp"></div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<p class="caption">Protótipo Helix Fuel · Relatórios. &nbsp;<b>Os 370 relatórios do SIG viram análises exploráveis: mesmo dado, agrupamento livre, visão salva com nome ("da Gabriela") e envio agendado — sem chamar consultor pra clonar relatório.</b></p>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const BRL=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const NL=new Intl.NumberFormat('pt-BR');
+
+  const CATS=[
+    ['vendas','Vendas & margem'],['caixa','Caixa & conferência'],['pista','Pista & encerrantes'],
+    ['estoque','Estoque & LMC'],['fin','Financeiro'],['cli','Clientes & faturado'],
+    ['fis','Fiscal & contábil'],['comp','Compras'],['eq','Equipe & comissões'],['aud','Auditoria']
+  ];
+
+  // cada análise substitui N relatórios do catálogo do SIG (códigos reais dos prints)
+  const REPS=[
+    {c:'vendas', nm:'Vendas por forma de pagamento', d:'Valor, cupons e ticket por forma — cruze com turno, posto ou produto.', sig:[257,220,310,345,208,349,352,197,309], dim:'forma'},
+    {c:'vendas', nm:'Vendas por produto e grupo', d:'Combustíveis × loja, litros e margem por grupo.', sig:[31,29,356,267,315,241,272,301], dim:'produto'},
+    {c:'vendas', nm:'Vendas por turno e horário', d:'Curva do dia operacional, pico por faixa horária.', sig:[328,179,314,290], dim:'turno'},
+    {c:'vendas', nm:'Ranking de vendedores', d:'Volume, valor e comissão por frentista/vendedor.', sig:[255,317,283,68], dim:'vendedor'},
+    {c:'vendas', nm:'Vendas e lucros', d:'Receita − custo por período, produto ou cliente.', sig:[56,113,206,229,248,266], dim:'produto'},
+    {c:'vendas', nm:'Comparativos de vendas', d:'Mês × mês, combustível × lubrificantes, consumo por cliente.', sig:[99,253,107,232], dim:'produto'},
+    {c:'vendas', nm:'Descontos e acréscimos', d:'Apura descontos concedidos por venda, vendedor e regra.', sig:[70,89,106,222,234,318], dim:'forma'},
+    {c:'vendas', nm:'Ticket médio', d:'Por posto, turno e forma de pagamento.', sig:[342,140], dim:'posto'},
+    {c:'caixa', nm:'Conferência geral de caixas', d:'Todos os caixas do dia, conciliação e pendências.', sig:[275,121,171,154,302,312], dim:'posto'},
+    {c:'caixa', nm:'Faltas e sobras de caixa', d:'Quebras por turno, operador e posto, contra a tolerância.', sig:[54,186], dim:'posto'},
+    {c:'caixa', nm:'Cartões & TEF', d:'Transações, taxas por adquirente e conciliação D+1.', sig:[101,74,97,340,277,306,343], dim:'forma'},
+    {c:'caixa', nm:'Cheques e cheque-troco', d:'À vista, pré-datado e troco PDV.', sig:[98,87,177,242,245,188], dim:'posto'},
+    {c:'caixa', nm:'Movimentação de caixa', d:'Sangrias, suprimentos e despesas lançadas no caixa.', sig:[151,329,90], dim:'turno'},
+    {c:'pista', nm:'Diferenças de encerrantes', d:'Gerencial × bomba, com detalhe dos lançamentos que explicam a diferença.', sig:[123,124,104,219,230], dim:'posto'},
+    {c:'pista', nm:'Movimentação por bico', d:'Operações e litros por bico no período.', sig:[64,265,166], dim:'produto'},
+    {c:'pista', nm:'Aferições', d:'Volume aferido por bico, dentro/fora da tolerância INMETRO.', sig:[162], dim:'posto'},
+    {c:'pista', nm:'Abastecidas manuais', d:'Vendas digitadas fora da automação — exceção a investigar.', sig:[176], dim:'posto'},
+    {c:'estoque', nm:'Posição de estoque', d:'Saldo por produto a preço de custo e de venda.', sig:[55,100,153,233,116,260,27], dim:'produto'},
+    {c:'estoque', nm:'Movimentação de estoque', d:'Entradas, saídas e saldo por produto/grupo, físico de combustíveis.', sig:[28,160,58,42,63], dim:'produto'},
+    {c:'estoque', nm:'Perdas e ganhos', d:'Diferenças físico × contábil por tanque e período.', sig:[131,67], dim:'posto'},
+    {c:'estoque', nm:'Contagem física', d:'Relação para inventário e confronto pós-contagem.', sig:[73,336,189], dim:'produto'},
+    {c:'estoque', nm:'Curva ABC & giro', d:'Classificação por relevância e produtos com menor giro.', sig:[82,205], dim:'produto'},
+    {c:'estoque', nm:'LMC — Livro de Movimentação', d:'Conferência diária do LMC por tanque, pronto para fiscalização.', sig:[110], dim:'posto'},
+    {c:'fin', nm:'Balancete e balanços', d:'Acumulado do período, resumido ou por empresa.', sig:[4,143,5,147], dim:'posto'},
+    {c:'fin', nm:'DRE e resultado', d:'Demonstrativo com custo calculado, variação patrimonial.', sig:[57,289,218,271,364], dim:'posto'},
+    {c:'fin', nm:'Movimentação de contas', d:'Extrato por conta, agrupado por mês, com filtro de responsável.', sig:[40,10,7,196,8,69,191], dim:'posto'},
+    {c:'fin', nm:'Pendências — a receber e a pagar', d:'Por conta, responsável, vencimento, limite, placa… um dataset, todos os cortes.', sig:[47,149,144,157,152,158,91,125,36,239,351,320,48,201,49,203,45,258,357,285,294,109,298,146,188], dim:'posto'},
+    {c:'fin', nm:'Contas pagas', d:'Regime de caixa, por conta e por baixa.', sig:[246,276,338,273], dim:'posto'},
+    {c:'fin', nm:'Bancos e saldos', d:'Posição de contas e saldos bancários na data.', sig:[297,27], dim:'posto'},
+    {c:'fin', nm:'Cobrança — boletos e notas', d:'Boletos, nota a cobrar, promissórias.', sig:[209,168,202,244,259,242], dim:'cliente'},
+    {c:'fin', nm:'Carta frete', d:'Relação e resumo por CNPJ.', sig:[169,204,243], dim:'cliente'},
+    {c:'cli', nm:'Consumo do cliente', d:'Um ou todos os clientes, resumido ou detalhado, por período.', sig:[52,237,134,363,252,185], dim:'cliente'},
+    {c:'cli', nm:'Consumo por placa', d:'Frotas: consumo separado por veículo.', sig:[84,212,146], dim:'cliente'},
+    {c:'cli', nm:'Clientes sem consumo', d:'Inativos e sem movimento — pra reativação comercial.', sig:[327,195], dim:'cliente'},
+    {c:'cli', nm:'Situação e limite do cliente', d:'Posição financeira, limite × utilizado.', sig:[72,298,109], dim:'cliente'},
+    {c:'cli', nm:'Faturas de venda', d:'Faturamento quinzenal/mensal por convênio.', sig:[163,190,324,333], dim:'cliente'},
+    {c:'cli', nm:'Fidelidade', d:'Programa de pontos e resgates.', sig:[227,359,360], dim:'cliente'},
+    {c:'fis', nm:'Conferência EFD Contribuições', d:'Confronta consolidação das operações com o arquivo EFD.', sig:[108,165,321], dim:'posto'},
+    {c:'fis', nm:'cBenef e benefícios fiscais', d:'Preenchimento do cBenef por produto, pendências destacadas.', sig:[247,126], dim:'produto'},
+    {c:'fis', nm:'Tributação por produto', d:'PIS/COFINS, isentos e alíquota zero, tributação aproximada.', sig:[211,145,355,78], dim:'produto'},
+    {c:'fis', nm:'Notas de entrada e saída', d:'Demonstrativo fiscal, conferência de XML e registro de entradas.', sig:[322,71,299,62,37,38,75,321], dim:'posto'},
+    {c:'fis', nm:'Mapa fiscal', d:'Resumo de apuração por estabelecimento.', sig:[240], dim:'posto'},
+    {c:'comp', nm:'Compras de combustíveis', d:'Por fornecedor, com chave de acesso e custo médio.', sig:[33,178,358], dim:'produto'},
+    {c:'comp', nm:'Compras de produtos', d:'Loja/conveniência por grupo e data de documento.', sig:[167,92,145], dim:'produto'},
+    {c:'comp', nm:'Previsão de compras', d:'Sugestão por giro e cobertura de estoque.', sig:[303,79,307], dim:'produto'},
+    {c:'comp', nm:'Variação de custo', d:'Evolução do preço de compra por produto.', sig:[156], dim:'produto'},
+    {c:'eq', nm:'Comissões por período', d:'Por vendedor, com regras da rede ou personalizadas.', sig:[53,172,173], dim:'vendedor'},
+    {c:'eq', nm:'Produtividade dos frentistas', d:'Ranking por identificação na bomba (Identifid).', sig:[68,118], dim:'vendedor'},
+    {c:'eq', nm:'Permissões efetivas', d:'O que cada usuário/grupo pode fazer, por posto.', sig:[141,132,30,249], dim:'posto'},
+    {c:'aud', nm:'Trilha de auditoria', d:'Tudo que mudou, por usuário e entidade.', sig:[228,193], dim:'posto'},
+    {c:'aud', nm:'Histórico de alterações de preço', d:'Quem mudou, quando, de quanto pra quanto, margem resultante.', sig:[76,77,115], dim:'posto'},
+    {c:'aud', nm:'Cupons e itens cancelados', d:'Cancelamentos com operador e motivo.', sig:[65], dim:'posto'},
+    {c:'aud', nm:'Regras de vendas e programações', d:'Regras vigentes, tolerâncias e filtros de desconto.', sig:[215,254,217,102,194,221,316,236,225,303,133,332], dim:'posto'},
+    {c:'aud', nm:'Autorizações de operações', d:'Operações que exigiram aval de gerente.', sig:[337], dim:'posto'},
+  ];
+  const covered=REPS.reduce((a,r)=>a+r.sig.length,0);
+  $('cover-n').textContent=`Helix: ${REPS.length} análises exploráveis cobrindo ${covered}+ deles — e qualquer variação vira visão salva`;
+
+  const DIMS={forma:'Forma de pagamento', turno:'Turno', posto:'Posto', produto:'Produto', vendedor:'Vendedor', cliente:'Cliente'};
+  const ROWS={
+    forma:['Crédito','Débito','PIX','Dinheiro','Faturado'],
+    turno:['Turno 1 · 06h–14h','Turno 2 · 14h–22h','Turno 3 · 22h–06h'],
+    posto:['Morro Sorocaba','Morro Campinas','Morro Rio Preto','Morro Bauru','Morro Tatuí','Morro Franca','Morro Marília','Morro Jundiaí','… mais 62 postos'],
+    produto:['Gasolina comum','Diesel S10','Etanol','Gasolina aditivada','Loja & conveniência'],
+    vendedor:['J. Pereira','M. Alves','R. Lima','C. Souza','A. Nunes','T. Ramos'],
+    cliente:['Transportes Rodovale','Viação Cerquilho','Agro Boituva','Prefeitura de Tatuí','Frota Leve Ltda','… mais 240 clientes'],
+  };
+
+  let cat='vendas', query='', cur=null, curDim=null;
+  const savedViews=[['Só lubrificantes','Gabriela'],['Fechamentos da quinzena','Tábata'],['Tolerância de desconto','Carlos']];
+
+  function renderCats(){
+    $('cats').innerHTML=CATS.map(c=>{
+      const n=REPS.filter(r=>r.c===c[0]).reduce((a,r)=>a+r.sig.length,0);
+      return `<button class="cat ${cat===c[0]?'on':''}" data-c="${c[0]}">${c[1]}<span class="n">${n}</span></button>`;
+    }).join('');
+    $('cats').querySelectorAll('.cat').forEach(b=>b.addEventListener('click',()=>{ cat=b.dataset.c; query=''; $('q').value=''; renderCats(); renderGrid(); }));
+  }
+
+  function renderSaved(){
+    $('saved').innerHTML='<span class="lbl">Visões salvas</span>'+savedViews.map(v=>`<button class="sv">${v[0]} <span class="by">· ${v[1]}</span></button>`).join('');
+    $('saved').querySelectorAll('.sv').forEach(b=>b.addEventListener('click',()=>toast('Visão salva: filtros e agrupamento restaurados como o dono deixou')));
+  }
+
+  function renderGrid(){
+    const list=REPS.filter(r=> query ? (r.nm+' '+r.d).toLowerCase().includes(query) : r.c===cat);
+    $('grid').innerHTML=list.map((r,i)=>`
+      <button class="rep" data-i="${REPS.indexOf(r)}">
+        <b>${r.nm}</b><span class="d">${r.d}</span>
+        <span class="foot"><span class="tagc">${CATS.find(c=>c[0]===r.c)[1]}</span><span class="cover-pill">substitui ${r.sig.length} relatório${r.sig.length>1?'s':''} do SIG</span></span>
+      </button>`).join('') || '<p style="color:var(--faint);font-size:13px">Nada encontrado — tente outro termo.</p>';
+    $('grid').querySelectorAll('.rep').forEach(b=>b.addEventListener('click',()=>openExp(+b.dataset.i)));
+  }
+
+  $('q').addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); renderGrid(); });
+
+  function seedRows(dim,seed){
+    let s=seed; const rnd=()=> (s=(s*1103515245+12345)%2147483648)/2147483648;
+    const base=dim==='posto'?77000:dim==='cliente'?24000:dim==='vendedor'?52000:390000;
+    return ROWS[dim].map(nm=>{
+      const v=base*(0.4+rnd()*1.2), lit=v/5.7, cup=Math.round(v/148);
+      return {nm, v, lit, cup, tk:v/cup};
+    }).sort((a,b)=>b.v-a.v);
+  }
+
+  function openExp(i){
+    cur=REPS[i]; curDim=cur.dim;
+    ['searchbox','saved','grid'].forEach(id=>$(id).classList.add('off'));
+    $('exp').classList.add('on');
+    drawExp();
+  }
+  function closeExp(){
+    $('exp').classList.remove('on');
+    ['searchbox','saved','grid'].forEach(id=>$(id).classList.remove('off'));
+  }
+
+  function drawExp(){
+    const rows=seedRows(curDim, 7+REPS.indexOf(cur)*13+Object.keys(DIMS).indexOf(curDim));
+    const tot=rows.reduce((a,r)=>a+r.v,0), max=rows[0].v;
+    $('exp').innerHTML=`
+      <button class="back" id="back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>Voltar ao catálogo</button>
+      <h1>${cur.nm}</h1>
+      <p class="sub">${cur.d} · <b>substitui ${cur.sig.length} relatórios do SIG</b> (códigos ${cur.sig.slice(0,6).join(', ')}${cur.sig.length>6?'…':''})</p>
+      <div class="fbar">
+        <div class="fctl"><label>Período</label><select><option>Hoje</option><option>Ontem</option><option>Últimos 7 dias</option><option selected>Este mês</option><option>Personalizado…</option></select></div>
+        <div class="fctl"><label>Postos</label><select><option selected>Toda a rede · 70</option><option>Praça Sorocaba · 18</option><option>Praça Campinas · 14</option><option>Só um posto…</option></select></div>
+        <div class="fctl"><label>Turno</label><select><option selected>Todos</option><option>Turno 1</option><option>Turno 2</option><option>Turno 3</option></select></div>
+      </div>
+      <div class="dims"><span class="lbl">Agrupar por</span>${Object.keys(DIMS).map(d=>`<button class="dim ${d===curDim?'on':''}" data-d="${d}">${DIMS[d]}</button>`).join('')}</div>
+      <div class="card"><div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>${DIMS[curDim]}</th><th class="r">Valor</th><th class="r">Volume</th><th class="r">Cupons</th><th class="r">Ticket médio</th><th style="width:130px"></th></tr></thead>
+          <tbody>${rows.map(r=>`<tr><td style="font-weight:600">${r.nm}</td><td class="r num">${BRL.format(r.v)}</td><td class="r num">${NL.format(Math.round(r.lit))} L</td><td class="r num">${NL.format(r.cup)}</td><td class="r num">${BRL.format(r.tk)}</td><td><span class="bar" style="width:${Math.round(r.v/max*110)}px"></span></td></tr>`).join('')}</tbody>
+          <tfoot><tr><td>Total</td><td class="r num">${BRL.format(tot)}</td><td class="r num">${NL.format(Math.round(tot/5.7))} L</td><td class="r num">${NL.format(rows.reduce((a,r)=>a+r.cup,0))}</td><td class="r num">${BRL.format(tot/rows.reduce((a,r)=>a+r.cup,0))}</td><td></td></tr></tfoot>
+        </table>
+      </div></div>
+      <div class="acts">
+        <button class="btn pri" id="a-save">Salvar como minha visão</button>
+        <button class="btn" id="a-sched">Agendar envio</button>
+        <button class="btn" id="a-csv">Exportar CSV</button>
+        <button class="btn" id="a-pdf">Exportar PDF</button>
+      </div>`;
+    $('back').addEventListener('click',closeExp);
+    $('exp').querySelectorAll('.dim').forEach(b=>b.addEventListener('click',()=>{ curDim=b.dataset.d; drawExp(); }));
+    $('a-save').addEventListener('click',()=>{ savedViews.push([cur.nm+' · '+DIMS[curDim],'você']); renderSaved(); toast('Visão salva — aparece no seu catálogo e pode ser compartilhada com a equipe'); });
+    $('a-sched').addEventListener('click',()=>toast('Agendado: toda manhã às 07h por e-mail e WhatsApp, já com os filtros desta visão'));
+    $('a-csv').addEventListener('click',()=>toast('CSV exportado com os filtros aplicados'));
+    $('a-pdf').addEventListener('click',()=>toast('PDF gerado no layout de impressão'));
+  }
+
+  let tmr;
+  function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tmr); tmr=setTimeout(()=>t.classList.remove('show'),2800); }
+
+  renderCats(); renderSaved(); renderGrid();
+})();
+</script>

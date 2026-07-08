@@ -1,0 +1,264 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Configurações · Dia Operacional</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3;
+    --warn:#B7791F; --warn-tint:#F6EEDC; --warn-line:#E6D4A8;
+    --gas:#CE8A2C; --adit:#9C6B14; --etanol:#2E9E6B; --diesel:#1B6E8C;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1180px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .tb-right{font-size:12.5px; color:var(--muted)}
+
+  .main{padding:22px 24px 28px}
+  .phead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap}
+  .phead h1{margin:0; font-size:21px; font-weight:660; letter-spacing:-.02em}
+  .phead .crumb{font-size:11.5px; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .seg{display:flex; gap:2px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .seg button{border:0; background:transparent; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--muted); padding:6px 14px; border-radius:6px; cursor:pointer}
+  .seg button.on{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .seg button:focus-visible{outline:2px solid var(--brand); outline-offset:-2px}
+
+  .view{display:none} .view[data-on]{display:block; animation:rise .24s ease}
+  @keyframes rise{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media(prefers-reduced-motion:reduce){ .view[data-on]{animation:none} }
+
+  .card{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; margin-bottom:14px}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px; gap:12px; flex-wrap:wrap}
+  .card .ch h2{margin:0; font-size:14.5px; font-weight:640}
+  .card .ch p{margin:2px 0 0; font-size:12px; color:var(--muted); width:100%}
+
+  /* dia operacional timeline */
+  .day{padding:10px 16px 18px}
+  .dayline{position:relative; height:64px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex}
+  .shift{position:relative; display:flex; flex-direction:column; justify-content:center; padding:0 14px; border-right:1px dashed var(--line)}
+  .shift:last-child{border-right:0}
+  .shift b{font-size:12.5px; font-weight:650}
+  .shift span{font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .shift.cur{background:var(--brand-tint)}
+  .shift.cur::after{content:"agora"; position:absolute; top:6px; right:10px; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--brand-ink)}
+  .daymeta{display:flex; gap:22px; margin-top:12px; flex-wrap:wrap}
+  .daymeta .m{font-size:12px; color:var(--muted)}
+  .daymeta .m b{display:block; color:var(--ink); font-size:14px; font-weight:650; font-variant-numeric:tabular-nums}
+
+  /* prices */
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 16px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:11px 16px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .prod{display:flex; align-items:center; gap:10px}
+  .prod .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .prod b{font-weight:600}
+  .pin{width:110px; text-align:right; font-family:inherit; font-size:13.5px; font-weight:640; padding:7px 10px; border:1px solid var(--line); border-radius:9px; font-variant-numeric:tabular-nums}
+  .pin:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.brand{color:var(--brand-ink); background:var(--brand-tint)}
+  .pill .pip{width:6px; height:6px; border-radius:50%; background:currentColor}
+  .margin{font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums}
+
+  .applybar{display:none; align-items:center; gap:14px; padding:13px 16px; background:var(--warn-tint); border-top:1px solid var(--warn-line); flex-wrap:wrap}
+  .applybar.show{display:flex}
+  .applybar .t{flex:1; min-width:220px; font-size:12.5px; color:var(--ink-2)}
+  .applybar .t b{font-weight:650}
+  .btn{font-family:inherit; font-size:13px; font-weight:650; padding:9px 16px; border-radius:10px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer}
+  .btn:hover{background:var(--brand-ink)}
+  .btn.ghost{background:#fff; color:var(--brand-ink)}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  /* team */
+  .team{padding:4px 16px 14px}
+  .member{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line-2)}
+  .member:last-child{border-bottom:0}
+  .member .av{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:700; color:#fff; flex:none}
+  .member .nm b{display:block; font-size:13.5px; font-weight:600; line-height:1.3}
+  .member .nm span{font-size:11.5px; color:var(--faint)}
+  .member .roles{margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+  .chip{font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2)}
+  .chip.hot{background:var(--brand-tint); border-color:transparent; color:var(--brand-ink)}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; opacity:0; pointer-events:none; transition:.25s; z-index:9}
+  .toast.show{opacity:1; transform:translateX(-50%)}
+
+  .caption{max-width:1180px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Configurações</span></div>
+    </div>
+    <div class="tb-right">Morro de Tatuí · Administrador</div>
+  </div>
+
+  <div class="main">
+    <div class="phead">
+      <div><div class="crumb">Posto Morro de Tatuí</div><h1>Configurações da operação</h1></div>
+      <div class="seg" role="tablist">
+        <button class="on" data-v="dia">Dia operacional</button>
+        <button data-v="precos">Preços</button>
+        <button data-v="equipe">Equipe</button>
+      </div>
+    </div>
+
+    <!-- DIA OPERACIONAL -->
+    <section class="view" data-view="dia" data-on>
+      <div class="card">
+        <div class="ch"><h2>Dia operacional · modelo da rede <span class="pill ok" style="margin-left:6px">67 postos no padrão · 3 exceções 24h</span></h2><p>Vendas, fechamentos e relatórios seguem o dia operacional — a madrugada pertence ao dia anterior. O modelo é da rede; cada posto pode ter exceção aprovada.</p></div>
+        <div class="day">
+          <div class="dayline">
+            <div class="shift" style="flex:1"><b>Turno 1</b><span>06h00 – 14h00 · M. Alves</span></div>
+            <div class="shift cur" style="flex:1"><b>Turno 2</b><span>14h00 – 22h00 · R. Lima</span></div>
+            <div class="shift" style="flex:1"><b>Turno 3</b><span>22h00 – 06h00 · plantão</span></div>
+          </div>
+          <div class="daymeta">
+            <div class="m">Dia operacional atual<b>07/07/2026</b></div>
+            <div class="m">Aberto às<b>06h00 · automático</b></div>
+            <div class="m">Turnos fechados<b class="num">1 de 3</b></div>
+            <div class="m">Vira em<b class="num">7h46min</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><h2>Regras do fechamento</h2><p>O que o sistema exige antes de deixar um turno fechar.</p></div>
+        <div class="team">
+          <div class="member"><span class="pill ok" style="margin-right:2px"><span class="pip"></span>Ativa</span><div class="nm"><b>Encerrantes lidos automaticamente na troca de turno</b><span>bloqueia fechamento se o Edge estiver offline há mais de 10 min</span></div></div>
+          <div class="member"><span class="pill ok" style="margin-right:2px"><span class="pip"></span>Ativa</span><div class="nm"><b>Tolerância de quebra de caixa: R$ 5,00 por turno</b><span>acima disso exige justificativa do gerente</span></div></div>
+          <div class="member"><span class="pill ok" style="margin-right:2px"><span class="pip"></span>Ativa</span><div class="nm"><b>Régua física obrigatória 1× por dia operacional</b><span>pendência aparece na Central se não medida até 08h</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PREÇOS -->
+    <section class="view" data-view="precos">
+      <div class="card">
+        <div class="ch"><h2>Tabela de preços · praça Sorocaba <span class="pill brand" style="margin-left:6px">aplica a 18 postos</span></h2>
+          <div class="seg" style="margin-left:auto"><button class="on">Sorocaba · 18</button><button>Campinas · 14</button><button>Norte · 14</button><button>+2</button></div>
+          <p>Edite o preço: vira vigência programada para <b>todos os postos da praça</b> na virada do dia operacional — nunca no meio de um turno. Exceções por posto são permitidas e auditadas.</p></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Produto</th><th class="r">Custo médio</th><th class="r">Preço vigente</th><th class="r">Novo preço</th><th>Vigência</th></tr></thead>
+          <tbody id="prices"></tbody>
+        </table>
+        </div>
+        <div class="applybar" id="applybar">
+          <span class="t" id="apply-text"></span>
+          <button class="btn ghost" id="apply-cancel">Descartar</button>
+          <button class="btn" id="apply-go">Programar · 18 postos · amanhã 06h00</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EQUIPE -->
+    <section class="view" data-view="equipe">
+      <div class="card">
+        <div class="ch"><h2>Equipe &amp; papéis</h2><p>Cada pessoa vê só o seu produto: frentista abre o app da pista, caixa abre o PDV, gerente vê a Central.</p></div>
+        <div class="team">
+          <div class="member"><div class="av" style="background:#3A5CD8">AB</div><div class="nm"><b>Abílio S.</b><span>desde 2019</span></div><div class="roles"><span class="chip hot">Administrador</span><span class="chip">Todos os postos</span></div></div>
+          <div class="member"><div class="av" style="background:#12855A">MA</div><div class="nm"><b>M. Alves</b><span>Turno 1</span></div><div class="roles"><span class="chip hot">Gerente de pista</span><span class="chip">Fechamento</span><span class="chip">Tatuí</span></div></div>
+          <div class="member"><div class="av" style="background:#9C6B14">RL</div><div class="nm"><b>R. Lima</b><span>Turno 2</span></div><div class="roles"><span class="chip hot">Caixa</span><span class="chip">PDV · Fechamento</span></div></div>
+          <div class="member"><div class="av" style="background:#1B6E8C">JP</div><div class="nm"><b>J. Pereira</b><span>Turno 2</span></div><div class="roles"><span class="chip hot">Frentista</span><span class="chip">App da pista</span></div></div>
+          <div class="member"><div class="av" style="background:#616779">CT</div><div class="nm"><b>Contábil Sorocaba</b><span>escritório externo</span></div><div class="roles"><span class="chip hot">Contador</span><span class="chip">Fiscal · somente leitura</span></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<p class="caption">Protótipo Helix Fuel · Configurações em escala de rede: <b>preço se programa por praça (1 edição → 18 postos), dia operacional é modelo com exceções, e tudo entra na virada — com margem e auditoria.</b></p>
+
+<script>
+(function(){
+  const BRL=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const $=id=>document.getElementById(id);
+
+  const rows=[
+    {prod:'Gasolina comum',     cor:'var(--gas)',    custo:5.31, atual:5.89},
+    {prod:'Gasolina aditivada', cor:'var(--adit)',   custo:5.52, atual:6.19},
+    {prod:'Etanol',             cor:'var(--etanol)', custo:3.78, atual:4.29},
+    {prod:'Diesel S10',         cor:'var(--diesel)', custo:5.49, atual:6.09},
+  ];
+  const pend={};
+
+  function margin(p,c){ return ((p-c)/p*100).toFixed(1).replace('.',',')+'%'; }
+
+  function render(){
+    $('prices').innerHTML=rows.map((r,i)=>`
+      <tr>
+        <td><div class="prod"><span class="dot" style="background:${r.cor}"></span><b>${r.prod}</b></div></td>
+        <td class="r num" style="color:var(--muted)">${BRL.format(r.custo)}</td>
+        <td class="r num" style="font-weight:640">${BRL.format(r.atual)} <div class="margin">margem ${margin(r.atual,r.custo)}</div></td>
+        <td class="r"><input class="pin num" type="number" step="0.01" data-i="${i}" value="${(pend[i]??r.atual).toFixed(2)}" aria-label="Novo preço ${r.prod}"></td>
+        <td>${pend[i]!=null && pend[i]!==r.atual
+            ? `<span class="pill warn"><span class="pip"></span>Programada · amanhã 06h · margem ${margin(pend[i],r.custo)}</span>`
+            : `<span class="pill ok"><span class="pip"></span>Vigente desde 05/07 06h</span>`}</td>
+      </tr>`).join('');
+    $('prices').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{
+      const i=+e.target.dataset.i, v=parseFloat(e.target.value);
+      if(!isNaN(v)){ if(Math.abs(v-rows[i].atual)>0.001) pend[i]=v; else delete pend[i]; sync(e.target); }
+    }));
+  }
+  function sync(focused){
+    const n=Object.keys(pend).length, bar=$('applybar');
+    if(n){ bar.classList.add('show');
+      $('apply-text').innerHTML=`<b>${n} alteração${n>1?'es':''} de preço</b> aguardando programação — entra na virada do dia operacional (amanhã 06h00), nunca no meio do turno.`;
+    } else bar.classList.remove('show');
+    // re-render vigência pills without killing the focused input
+    const active=document.activeElement;
+    render();
+    if(focused){ const again=$('prices').querySelector(`input[data-i="${focused.dataset.i}"]`); if(again){ again.focus(); again.value=focused.value; } }
+  }
+
+  let tmr;
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tmr); tmr=setTimeout(()=>t.classList.remove('show'),2800); }
+
+  $('apply-go').addEventListener('click',()=>{
+    const n=Object.keys(pend).length;
+    Object.keys(pend).forEach(i=>{ rows[i].futuro=pend[i]; });
+    Object.keys(pend).forEach(k=>delete pend[k]);
+    render(); $('applybar').classList.remove('show');
+    toast(`${n} vigência${n>1?'s':''} programada${n>1?'s':''} para os 18 postos da praça Sorocaba · 08/07 06h00 · auditoria registrada`);
+  });
+  $('apply-cancel').addEventListener('click',()=>{ Object.keys(pend).forEach(k=>delete pend[k]); render(); $('applybar').classList.remove('show'); });
+
+  // tabs
+  const tabs=document.querySelectorAll('.seg button');
+  const views=document.querySelectorAll('.view');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.toggle('on', x===t));
+    views.forEach(v=> v.dataset.view===t.dataset.v ? v.setAttribute('data-on','') : v.removeAttribute('data-on'));
+  }));
+
+  render();
+})();
+</script>

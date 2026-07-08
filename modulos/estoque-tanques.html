@@ -1,0 +1,268 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Estoque & Tanques</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA; --ok-line:#BFE0CD;
+    --bad:#C0392B; --bad-tint:#F8E6E3; --bad-line:#EEC4BD;
+    --warn:#B7791F; --warn-tint:#F6EEDC;
+    --gas:#CE8A2C; --adit:#9C6B14; --etanol:#2E9E6B; --diesel:#1B6E8C;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1180px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .tb-right{font-size:12.5px; color:var(--muted); font-weight:500}
+
+  .main{padding:22px 24px 28px}
+  .phead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap}
+  .phead h1{margin:0; font-size:21px; font-weight:660; letter-spacing:-.02em}
+  .phead .crumb{font-size:11.5px; letter-spacing:.03em; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .lmc{display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600; color:var(--ok); background:var(--ok-tint); padding:6px 12px; border-radius:999px}
+  .lmc svg{width:14px; height:14px}
+
+  .tanks{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+  @media(max-width:900px){ .tanks{grid-template-columns:1fr} }
+
+  .tank{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden}
+  .tank .th{display:flex; align-items:center; gap:11px; padding:13px 16px; border-bottom:1px solid var(--line-2)}
+  .tank .th .dot{width:10px; height:10px; border-radius:50%; flex:none}
+  .tank .th b{font-size:14.5px; font-weight:650}
+  .tank .th small{color:var(--faint); font-size:11.5px; font-weight:500; margin-left:2px}
+  .tank .th .pill{margin-left:auto; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; letter-spacing:.03em}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.bad{color:var(--bad); background:var(--bad-tint)}
+
+  .tank .body{padding:14px 16px; display:grid; grid-template-columns:96px 1fr; gap:16px}
+  .gauge{position:relative; width:96px; height:132px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); overflow:hidden}
+  .gauge .fill{position:absolute; left:0; right:0; bottom:0; transition:height .5s ease}
+  .gauge .pc{position:absolute; inset:0; display:grid; place-items:center; font-size:16px; font-weight:700; color:var(--ink); text-shadow:0 1px 0 rgba(255,255,255,.6)}
+  .gauge .min{position:absolute; left:0; right:0; border-top:2px dashed var(--bad); opacity:.5}
+
+  .tdata{display:flex; flex-direction:column; gap:6px; min-width:0}
+  .trow{display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px}
+  .trow .k{color:var(--muted)}
+  .trow .v{font-weight:640; font-variant-numeric:tabular-nums}
+  .regua{display:flex; align-items:center; gap:8px; margin-top:4px}
+  .regua label{font-size:11px; color:var(--faint); font-weight:700; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap}
+  .regua input{flex:1; min-width:0; font-family:inherit; font-size:13.5px; font-weight:640; text-align:right; padding:7px 10px; border:1px solid var(--line); border-radius:9px; font-variant-numeric:tabular-nums}
+  .regua input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-tint)}
+  .verdict{margin-top:2px; font-size:12px; font-weight:650; display:flex; align-items:center; gap:6px}
+  .verdict.ok{color:var(--ok)} .verdict.warn{color:var(--warn)} .verdict.bad{color:var(--bad)}
+  .verdict svg{width:13px; height:13px; flex:none}
+
+  .grid2{display:grid; grid-template-columns:1.4fr 1fr; gap:14px; margin-top:14px}
+  @media(max-width:900px){ .grid2{grid-template-columns:1fr} }
+  .card{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px}
+  .card .ch h2{margin:0; font-size:14.5px; font-weight:640}
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 16px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:11px 16px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .btn{font-family:inherit; font-size:12px; font-weight:650; padding:7px 13px; border-radius:9px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer}
+  .btn:hover{background:var(--brand-ink)}
+  .btn.ghost{background:#fff; color:var(--brand-ink)}
+  .btn:disabled{opacity:.45; cursor:default}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .loss{padding:4px 16px 14px}
+  .lossrow{display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line-2); font-size:12.5px}
+  .lossrow:last-child{border-bottom:0}
+  .lossrow .l{display:flex; align-items:center; gap:9px; color:var(--ink-2)}
+  .lossrow .l .dot{width:8px; height:8px; border-radius:50%}
+  .lossrow .v{font-weight:650; font-variant-numeric:tabular-nums}
+  .lossrow .v.ok{color:var(--ok)} .lossrow .v.warn{color:var(--warn)}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; opacity:0; pointer-events:none; transition:.25s; z-index:9}
+  .toast.show{opacity:1; transform:translateX(-50%)}
+
+  .caption{max-width:1180px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Estoque &amp; tanques</span></div>
+    </div>
+    <div class="tb-right">Rede · 70 postos · 273 tanques · Terça, 7 jul 2026</div>
+  </div>
+
+  <div class="main">
+    <div class="phead">
+      <div><div class="crumb">Rede · combustível</div><h1>Tanques da rede</h1></div>
+      <span class="lmc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>LMC dos 70 postos gerado automaticamente</span>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch"><h2>Exceções da rede agora</h2><span style="font-size:11.5px;color:var(--faint)">273 tanques · 265 dentro do normal — só estes precisam de você</span></div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr><th>Posto · tanque</th><th class="r">Nível</th><th class="r">Autonomia</th><th>Situação</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b style="font-weight:600">Tietê · T4 Diesel S10</b></td><td class="r num">8%</td><td class="r num">~6 h</td><td><span class="pill bad">Crítico</span></td><td class="r"><button class="btn">Programar entrega</button></td></tr>
+          <tr><td><b style="font-weight:600">Avaré · T3 Etanol</b></td><td class="r num">6%</td><td class="r num">~5 h</td><td><span class="pill bad">Crítico</span></td><td class="r"><button class="btn">Programar entrega</button></td></tr>
+          <tr><td><b style="font-weight:600">Cerquilho · T3 Etanol</b></td><td class="r num">12%</td><td class="r num">~14 h</td><td><span class="pill warn">Baixo</span></td><td class="r"><button class="btn ghost">Entrega amanhã 08h30</button></td></tr>
+          <tr><td><b style="font-weight:600">Franca · T1 Gasolina</b></td><td class="r num">14%</td><td class="r num">~18 h</td><td><span class="pill warn">Baixo</span></td><td class="r"><button class="btn ghost">Sugerir pedido</button></td></tr>
+          <tr><td><b style="font-weight:600">Jaú · T2 Etanol · perda 0,42%</b></td><td class="r num">44%</td><td class="r num">—</td><td><span class="pill warn">Investigar perda</span></td><td class="r"><button class="btn ghost">Abrir ocorrência</button></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="phead" style="margin-top:4px">
+      <div><div class="crumb">Drill-down · 1 posto</div><h1 style="font-size:17px">Morro de Tatuí — 4 tanques</h1></div>
+    </div>
+    <div class="tanks" id="tanks"></div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="ch"><h2>Estoque de loja &amp; conveniência · Tatuí</h2><span style="font-size:11.5px;color:var(--faint)">contagem pelo app mobile · última: há 3 dias · próxima: sexta 06h</span></div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr><th>Produto</th><th class="r">Saldo</th><th class="r">Mínimo</th><th class="r">Giro 7d</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td><b style="font-weight:600">Óleo Lubrax 1L</b></td><td class="r num">6 un</td><td class="r num">12</td><td class="r num">9 un</td><td><span class="pill warn">Repor — pedido sugerido: 24 un</span></td></tr>
+          <tr><td><b style="font-weight:600">Aditivo radiador</b></td><td class="r num">3 un</td><td class="r num">10</td><td class="r num">6 un</td><td><span class="pill warn">Repor — pedido sugerido: 18 un</span></td></tr>
+          <tr><td><b style="font-weight:600">Água 500ml</b></td><td class="r num">84 un</td><td class="r num">40</td><td class="r num">61 un</td><td><span class="pill ok">Normal</span></td></tr>
+          <tr><td><b style="font-weight:600">Gelo 2kg</b></td><td class="r num">22 un</td><td class="r num">15</td><td class="r num">18 un</td><td><span class="pill ok">Normal</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div style="padding:10px 16px 14px; font-size:12px; color:var(--muted)">Reposição vira <b>solicitação de compra no Helix Compras</b> (produto irmão da suíte) com um clique — Fuel não recria o módulo de compras (ADR-009).</div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="ch"><h2>Entregas programadas</h2></div>
+        <div style="overflow-x:auto">
+        <table class="stbl">
+          <thead><tr><th>Fornecedor</th><th>Produto</th><th class="r">Volume</th><th>Chegada</th><th></th></tr></thead>
+          <tbody>
+            <tr id="dlv-row">
+              <td><b style="font-weight:600">Distribuidora Ipiranga</b><br><small style="color:var(--faint)">NF-e 48.213 · placa BTX-4D21</small></td>
+              <td>Diesel S10</td><td class="r num">15.000 L</td><td>Hoje · 23h00</td>
+              <td class="r"><button class="btn" id="dlv-btn">Registrar recebimento</button></td>
+            </tr>
+            <tr>
+              <td><b style="font-weight:600">Raízen</b><br><small style="color:var(--faint)">Pedido #1182 · confirmar volume</small></td>
+              <td>Etanol</td><td class="r num">10.000 L</td><td>Amanhã · 08h30</td>
+              <td class="r"><button class="btn ghost" disabled>Aguardando</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>Perdas &amp; sobras · últimos 7 dias</h2></div>
+        <div class="loss">
+          <div class="lossrow"><div class="l"><span class="dot" style="background:var(--gas)"></span>Gasolina comum</div><span class="v ok num">−0,08% · dentro da tolerância</span></div>
+          <div class="lossrow"><div class="l"><span class="dot" style="background:var(--adit)"></span>Gasolina aditivada</div><span class="v ok num">−0,04% · dentro da tolerância</span></div>
+          <div class="lossrow"><div class="l"><span class="dot" style="background:var(--etanol)"></span>Etanol</div><span class="v warn num">−0,42% · investigar T3</span></div>
+          <div class="lossrow"><div class="l"><span class="dot" style="background:var(--diesel)"></span>Diesel S10</div><span class="v ok num">+0,02% · dentro da tolerância</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<p class="caption">Protótipo Helix Fuel · Estoque em escala de rede: <b>273 tanques viram 5 exceções acionáveis; o drill-down por posto mantém a régua física × contábil julgada na hora (tolerância 0,6%). No SIG, era um LMC manual por posto.</b></p>
+
+<script>
+(function(){
+  const L0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+  const $=id=>document.getElementById(id);
+  const TOL=0.006;
+
+  const tanks=[
+    {id:'T1', prod:'Gasolina comum',     cor:'var(--gas)',    cap:25000, sys:15480, regua:15460, min:.15},
+    {id:'T2', prod:'Gasolina aditivada', cor:'var(--adit)',   cap:15000, sys:9120,  regua:9115,  min:.15},
+    {id:'T3', prod:'Etanol',             cor:'var(--etanol)', cap:20000, sys:2410,  regua:2310,  min:.15},
+    {id:'T4', prod:'Diesel S10',         cor:'var(--diesel)', cap:30000, sys:2380,  regua:2375,  min:.12},
+  ];
+
+  function verdict(t){
+    const d=t.regua-t.sys, pc=t.sys? d/t.sys : 0;
+    if(Math.abs(pc)<=TOL) return {cls:'ok', ic:'<path d="M20 6L9 17l-5-5"/>', txt:`Diferença ${d>=0?'+':'−'}${L0.format(Math.abs(d))} L (${(pc*100).toFixed(2).replace('.',',')}%) · dentro da tolerância`};
+    if(Math.abs(pc)<=TOL*3) return {cls:'warn', ic:'<circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/>', txt:`Diferença ${d>=0?'+':'−'}${L0.format(Math.abs(d))} L (${(pc*100).toFixed(2).replace('.',',')}%) · investigar`};
+    return {cls:'bad', ic:'<circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/>', txt:`Diferença ${d>=0?'+':'−'}${L0.format(Math.abs(d))} L (${(pc*100).toFixed(2).replace('.',',')}%) · possível vazamento — abrir ocorrência`};
+  }
+  function levelPill(t){
+    const pc=t.sys/t.cap;
+    if(pc<=t.min*0.7) return '<span class="pill bad">Crítico</span>';
+    if(pc<=t.min) return '<span class="pill warn">Baixo</span>';
+    return '<span class="pill ok">Normal</span>';
+  }
+
+  function render(){
+    $('tanks').innerHTML=tanks.map((t,i)=>{
+      const pc=Math.round(t.sys/t.cap*100), v=verdict(t);
+      return `<div class="tank">
+        <div class="th"><span class="dot" style="background:${t.cor}"></span><b>${t.id} · ${t.prod}</b><small>cap. ${L0.format(t.cap)} L</small>${levelPill(t)}</div>
+        <div class="body">
+          <div class="gauge">
+            <div class="min" style="bottom:${t.min*100}%"></div>
+            <div class="fill" style="height:${pc}%; background:${t.cor}; opacity:.45"></div>
+            <span class="pc num">${pc}%</span>
+          </div>
+          <div class="tdata">
+            <div class="trow"><span class="k">Saldo contábil (sistema)</span><span class="v num">${L0.format(t.sys)} L</span></div>
+            <div class="trow"><span class="k">Vendido hoje</span><span class="v num">${L0.format([3120,1210,1890,4230][i])} L</span></div>
+            <div class="trow"><span class="k">Última medição</span><span class="v">hoje · 06h05</span></div>
+            <div class="regua"><label>Régua física</label><input type="number" step="1" value="${t.regua}" data-i="${i}" aria-label="Régua ${t.id}"><span style="font-size:11px;color:var(--faint);font-weight:600">L</span></div>
+            <div class="verdict ${v.cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">${v.ic}</svg>${v.txt}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    $('tanks').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{
+      const i=+e.target.dataset.i, v=parseFloat(e.target.value);
+      if(!isNaN(v)){ tanks[i].regua=v;
+        const card=e.target.closest('.tank'), vd=verdict(tanks[i]);
+        const el=card.querySelector('.verdict');
+        el.className='verdict '+vd.cls;
+        el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">${vd.ic}</svg>${vd.txt}`;
+      }
+    }));
+  }
+
+  let tmr;
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tmr); tmr=setTimeout(()=>t.classList.remove('show'),2600); }
+
+  $('dlv-btn').addEventListener('click',()=>{
+    const t=tanks[3]; t.sys+=15000; t.regua+=15000;
+    render();
+    const row=$('dlv-row');
+    row.innerHTML='<td colspan="5" style="color:var(--ok);font-weight:600;font-size:12.5px">✓ Recebimento registrado — 15.000 L de Diesel S10 no T4 · NF-e conferida · estoque e LMC atualizados</td>';
+    toast('T4 Diesel: 2.380 L → 17.380 L · entrada lançada');
+  });
+
+  render();
+})();
+</script>

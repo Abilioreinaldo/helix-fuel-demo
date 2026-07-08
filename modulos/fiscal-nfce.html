@@ -1,0 +1,196 @@
+<meta charset="utf-8">
+<title>Helix Fuel — Fiscal · NFC-e</title>
+<style>
+  :root{
+    --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F4F6FB;
+    --ink:#161A24; --ink-2:#333849; --muted:#616779; --faint:#8A90A2;
+    --line:#DFE2EC; --line-2:#ECEEF4;
+    --brand:#3A5CD8; --brand-ink:#2743B4; --brand-tint:#E9EDFC;
+    --ok:#12855A; --ok-tint:#E3F2EA;
+    --bad:#C0392B; --bad-tint:#F8E6E3; --bad-line:#EEC4BD;
+    --warn:#B7791F; --warn-tint:#F6EEDC; --warn-line:#E6D4A8;
+    --shadow:0 1px 2px rgba(22,26,36,.05), 0 16px 40px -18px rgba(22,26,36,.22);
+    --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding:26px 20px 50px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .app{max-width:1180px; margin:0 auto; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:15px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#fff,#fbfcfe)}
+  .brand{display:flex; align-items:center; gap:11px}
+  .brand .mark{width:33px; height:33px}
+  .brand .wm b{font-size:15px; letter-spacing:.15em; font-weight:700; display:flex; gap:6px}
+  .brand .wm b .fuel{color:var(--brand)}
+  .brand .wm span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; line-height:1.3}
+  .sefaz{display:flex; align-items:center; gap:14px}
+  .sefaz .pill{display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:700; padding:5px 12px; border-radius:999px}
+  .pill.ok{color:var(--ok); background:var(--ok-tint)}
+  .pill.warn{color:var(--warn); background:var(--warn-tint)}
+  .pill.bad{color:var(--bad); background:var(--bad-tint)}
+  .pill .pip{width:7px; height:7px; border-radius:50%; background:currentColor}
+
+  .main{padding:22px 24px 28px}
+  .phead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap}
+  .phead h1{margin:0; font-size:21px; font-weight:660; letter-spacing:-.02em}
+  .phead .crumb{font-size:11.5px; color:var(--faint); font-weight:600; text-transform:uppercase; margin-bottom:3px}
+  .cert{font-size:12px; color:var(--muted); text-align:right}
+  .cert b{display:block; color:var(--warn); font-weight:650}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px}
+  @media(max-width:860px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+  .kpi{border:1px solid var(--line); border-radius:13px; padding:13px 15px; background:#fff}
+  .kpi .k{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  .kpi .v{font-size:24px; font-weight:680; letter-spacing:-.02em; margin-top:4px}
+  .kpi .v small{font-size:12px; font-weight:600; color:var(--muted)}
+  .kpi.warn{border-color:var(--warn-line); background:var(--warn-tint)}
+  .kpi.warn .v{color:var(--warn)}
+  .kpi.bad .v{color:var(--bad)}
+
+  .cont{border:1px solid var(--warn-line); background:var(--warn-tint); border-radius:14px; padding:15px 18px; display:flex; align-items:center; gap:16px; margin-bottom:14px; flex-wrap:wrap}
+  .cont.ok{border-color:var(--ok-tint); background:var(--ok-tint)}
+  .cont .ci{width:38px; height:38px; border-radius:11px; background:#fff; display:grid; place-items:center; flex:none}
+  .cont .ci svg{width:20px; height:20px; color:var(--warn)}
+  .cont.ok .ci svg{color:var(--ok)}
+  .cont .ct{flex:1; min-width:220px}
+  .cont .ct b{display:block; font-size:14.5px; font-weight:650}
+  .cont .ct span{font-size:12.5px; color:var(--muted)}
+  .btn{font-family:inherit; font-size:13px; font-weight:650; padding:10px 18px; border-radius:10px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer}
+  .btn:hover{background:var(--brand-ink)}
+  .btn:disabled{opacity:.5; cursor:default}
+  .btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .card{border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px}
+  .card .ch h2{margin:0; font-size:14.5px; font-weight:640}
+  .stbl{width:100%; border-collapse:collapse; font-size:13px}
+  .stbl th{text-align:left; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:700; padding:6px 16px; border-bottom:1px solid var(--line)}
+  .stbl th.r,.stbl td.r{text-align:right}
+  .stbl td{padding:11px 16px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .stbl tbody tr:last-child td{border-bottom:0}
+  .stbl tr:hover td{background:var(--surface-2)}
+  .stbl .nn b{font-weight:600}
+  .stbl .nn small{display:block; color:var(--faint); font-size:11px}
+  .fix{font-size:11.5px; color:var(--brand-ink); font-weight:650; background:none; border:0; cursor:pointer; font-family:inherit; padding:0}
+  .fix:hover{text-decoration:underline}
+
+  .caption{max-width:1180px; margin:14px auto 0; font-size:11.5px; color:var(--faint); text-align:center}
+  .caption b{color:var(--muted); font-weight:600}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hxA" x1="7" y1="7" x2="33" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#9A6BFF"/><stop offset="1" stop-color="#37A6FF"/></linearGradient>
+          <linearGradient id="hxB" x1="33" y1="7" x2="7" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#57C9FF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+        </defs>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(45 20 20)" fill="url(#hxA)"/>
+        <rect x="16.5" y="3.5" width="7" height="33" rx="3.5" transform="rotate(-45 20 20)" fill="url(#hxB)"/>
+      </svg>
+      <div class="wm"><b>HELIX <span class="fuel">FUEL</span></b><span>Fiscal · NFC-e</span></div>
+    </div>
+    <div class="sefaz">
+      <span class="pill ok"><span class="pip"></span>SEFAZ-SP online · 1,2s</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="phead">
+      <div><div class="crumb">Rede · 70 postos · 70 séries · hoje</div><h1>Emissão fiscal da rede</h1></div>
+      <div class="cert">Certificados A1<b>5 vencem em &lt;45 dias — o mais próximo: Avaré (9d)</b></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="k">Autorizadas hoje · rede</div><div class="v num" id="k-auth">28.412</div></div>
+      <div class="kpi warn" id="k-cont-card"><div class="k">Postos em contingência</div><div class="v num" id="k-cont">1</div></div>
+      <div class="kpi bad"><div class="k">Rejeitadas · rede</div><div class="v num">12</div></div>
+      <div class="kpi"><div class="k">Tempo médio autorização</div><div class="v num">1,2 <small>s</small></div></div>
+    </div>
+
+    <div class="cont" id="cont-banner">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2v6M8 4l8 4"/><path d="M10.3 21a9 9 0 118.4-11"/><path d="M21 16a4 4 0 01-4 4"/></svg></div>
+      <div class="ct" id="cont-text">
+        <b>Cerquilho: 3 notas em contingência offline (queda de link às 20h14)</b>
+        <span>Único posto da rede em contingência agora. Assinadas no Edge e prontas para transmitir — prazo legal de 24h (ADR-005).</span>
+      </div>
+      <button class="btn" id="cont-btn">Transmitir agora</button>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2>Notas que precisam de atenção + últimas da rede</h2><span style="font-size:11.5px;color:var(--faint)">as 28.412 autorizadas sem pendência não aparecem aqui</span></div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr><th>Nota</th><th>Hora</th><th class="r">Valor</th><th>Pagamento</th><th>Status</th><th></th></tr></thead>
+        <tbody id="notes"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="caption">Protótipo Helix Fuel · Fiscal da rede: <b>70 séries emitindo, e a tela só mostra o que desvia — contingência, rejeição, certificado vencendo. Clique em "Transmitir agora". No SIG, era um chamado ao suporte por posto.</b></p>
+
+<script>
+(function(){
+  const BRL=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const $=id=>document.getElementById(id);
+
+  let notes=[
+    {n:'48.411', h:'22h03', v:264.90, pg:'PIX',      st:'auth'},
+    {n:'48.410', h:'22h01', v:731.40, pg:'Crédito',  st:'auth'},
+    {n:'48.409', h:'21h58', v:88.20,  pg:'Dinheiro', st:'auth'},
+    {n:'48.408', h:'21h55', v:412.00, pg:'Débito',   st:'rej', motivo:'Rejeição 611: cEAN inválido no item 2 (Óleo Lubrax)'},
+    {n:'C-104',  h:'20h19', v:156.70, pg:'Dinheiro', st:'cont'},
+    {n:'C-103',  h:'20h17', v:640.10, pg:'Crédito',  st:'cont'},
+    {n:'C-102',  h:'20h15', v:97.35,  pg:'PIX',      st:'cont'},
+  ];
+
+  const PILL={auth:'<span class="pill ok"><span class="pip"></span>Autorizada</span>',
+              cont:'<span class="pill warn"><span class="pip"></span>Contingência</span>',
+              rej:'<span class="pill bad"><span class="pip"></span>Rejeitada</span>',
+              tx:'<span class="pill warn"><span class="pip"></span>Transmitindo…</span>'};
+
+  function render(){
+    $('notes').innerHTML=notes.map((x,i)=>`
+      <tr>
+        <td class="nn"><b>NFC-e ${x.n}</b>${x.motivo?`<small>${x.motivo}</small>`:''}</td>
+        <td class="num">${x.h}</td>
+        <td class="r num">${BRL.format(x.v)}</td>
+        <td>${x.pg}</td>
+        <td>${PILL[x.st]}</td>
+        <td class="r">${x.st==='rej'?'<button class="fix">Corrigir e reenviar →</button>':''}</td>
+      </tr>`).join('');
+    document.querySelectorAll('.fix').forEach(b=>b.addEventListener('click',()=>{
+      const r=notes.find(x=>x.st==='rej');
+      if(r){ r.st='auth'; r.motivo='Corrigida: cEAN atualizado no cadastro do produto'; r.n='48.412'; render();
+        document.querySelector('.kpi.bad .v').textContent='0';
+      }
+    }));
+  }
+
+  $('cont-btn').addEventListener('click',()=>{
+    $('cont-btn').disabled=true; $('cont-btn').textContent='Transmitindo…';
+    const pend=notes.filter(x=>x.st==='cont');
+    pend.forEach(x=>x.st='tx'); render();
+    let done=0;
+    pend.forEach((x,i)=>setTimeout(()=>{
+      x.st='auth'; x.n='48.4'+(13+i); done++;
+      $('k-cont').textContent=done===pend.length?'0':'1';
+      $('k-auth').textContent=(28412+done).toLocaleString('pt-BR');
+      render();
+      if(done===pend.length){
+        const b=$('cont-banner'); b.classList.add('ok');
+        b.querySelector('.ci svg').innerHTML='<path d="M20 6L9 17l-5-5"/>';
+        $('cont-text').innerHTML='<b>Contingência zerada</b><span>3 notas transmitidas e autorizadas pela SEFAZ-SP · numeração definitiva atribuída.</span>';
+        $('cont-btn').remove();
+        $('k-cont-card').classList.remove('warn');
+      }
+    }, 700*(i+1)));
+  });
+
+  render();
+})();
+</script>
