@@ -164,6 +164,7 @@
   const REPS=[
     {c:'vendas', nm:'Vendas por forma de pagamento', d:'Valor, cupons e ticket por forma — cruze com turno, posto ou produto.', sig:[257,220,310,345,208,349,352,197,309], dim:'forma'},
     {c:'vendas', nm:'Vendas por produto e grupo', d:'Combustíveis × loja, litros e margem por grupo.', sig:[31,29,356,267,315,241,272,301], dim:'produto'},
+    {c:'vendas', nm:'Ranking de vendas dos postos', d:'Os 70 postos ordenados por venda, com filtro de categoria: combustível, arla ou depósito (lubrificantes, filtros, aditivos, aromatizantes).', sig:[283,255,301,241,107], dim:'posto'},
     {c:'vendas', nm:'Vendas por turno e horário', d:'Curva do dia operacional, pico por faixa horária.', sig:[328,179,314,290], dim:'turno'},
     {c:'vendas', nm:'Ranking de vendedores', d:'Volume, valor e comissão por frentista/vendedor.', sig:[255,317,283,68], dim:'vendedor'},
     {c:'vendas', nm:'Vendas e lucros', d:'Receita − custo por período, produto ou cliente.', sig:[56,113,206,229,248,266], dim:'produto'},
@@ -229,8 +230,15 @@
     vendedor:['J. Pereira','M. Alves','R. Lima','C. Souza','A. Nunes','T. Ramos'],
     cliente:['Transportes Rodovale','Viação Cerquilho','Agro Boituva','Prefeitura de Tatuí','Frota Leve Ltda','… mais 240 clientes'],
   };
+  // categorias de produto (filtro pedido pela PO): "depósito" engloba lub, filtros, aditivos, aromatizantes
+  const CATS_PROD={
+    todas:{nm:'Todas as categorias', mult:1},
+    comb: {nm:'Combustível', mult:0.82},
+    arla: {nm:'Arla 32', mult:0.04},
+    dep:  {nm:'Depósito · lub, filtros, aditivos, aromatizantes', mult:0.14},
+  };
 
-  let cat='vendas', query='', cur=null, curDim=null;
+  let cat='vendas', query='', cur=null, curDim=null, curCat='todas';
   const savedViews=[['Só lubrificantes','Gabriela'],['Fechamentos da quinzena','Tábata'],['Tolerância de desconto','Carlos']];
 
   function renderCats(){
@@ -258,9 +266,10 @@
 
   $('q').addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); renderGrid(); });
 
-  function seedRows(dim,seed){
+  function seedRows(dim,seed,mult){
+    mult=mult||1;
     let s=seed; const rnd=()=> (s=(s*1103515245+12345)%2147483648)/2147483648;
-    const base=dim==='posto'?77000:dim==='cliente'?24000:dim==='vendedor'?52000:390000;
+    const base=(dim==='posto'?77000:dim==='cliente'?24000:dim==='vendedor'?52000:390000)*mult;
     return ROWS[dim].map(nm=>{
       const v=base*(0.4+rnd()*1.2), lit=v/5.7, cup=Math.round(v/148);
       return {nm, v, lit, cup, tk:v/cup};
@@ -268,7 +277,7 @@
   }
 
   function openExp(i){
-    cur=REPS[i]; curDim=cur.dim;
+    cur=REPS[i]; curDim=cur.dim; curCat='todas';
     ['searchbox','saved','grid'].forEach(id=>$(id).classList.add('off'));
     $('exp').classList.add('on');
     drawExp();
@@ -279,7 +288,8 @@
   }
 
   function drawExp(){
-    const rows=seedRows(curDim, 7+REPS.indexOf(cur)*13+Object.keys(DIMS).indexOf(curDim));
+    const catSeed={todas:0,comb:100,arla:200,dep:300}[curCat];
+    const rows=seedRows(curDim, 7+REPS.indexOf(cur)*13+Object.keys(DIMS).indexOf(curDim)+catSeed, CATS_PROD[curCat].mult);
     const tot=rows.reduce((a,r)=>a+r.v,0), max=rows[0].v;
     $('exp').innerHTML=`
       <button class="back" id="back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>Voltar ao catálogo</button>
@@ -289,6 +299,7 @@
         <div class="fctl"><label>Período</label><select><option>Hoje</option><option>Ontem</option><option>Últimos 7 dias</option><option selected>Este mês</option><option>Personalizado…</option></select></div>
         <div class="fctl"><label>Postos</label><select><option selected>Toda a rede · 70</option><option>Praça Sorocaba · 18</option><option>Praça Campinas · 14</option><option>Só um posto…</option></select></div>
         <div class="fctl"><label>Turno</label><select><option selected>Todos</option><option>Turno 1</option><option>Turno 2</option><option>Turno 3</option></select></div>
+        <div class="fctl"><label>Categoria</label><select id="catsel">${Object.keys(CATS_PROD).map(k=>`<option value="${k}" ${k===curCat?'selected':''}>${CATS_PROD[k].nm}</option>`).join('')}</select></div>
       </div>
       <div class="dims"><span class="lbl">Agrupar por</span>${Object.keys(DIMS).map(d=>`<button class="dim ${d===curDim?'on':''}" data-d="${d}">${DIMS[d]}</button>`).join('')}</div>
       <div class="card"><div style="overflow-x:auto">
@@ -306,6 +317,7 @@
       </div>`;
     $('back').addEventListener('click',closeExp);
     $('exp').querySelectorAll('.dim').forEach(b=>b.addEventListener('click',()=>{ curDim=b.dataset.d; drawExp(); }));
+    const catsel=$('catsel'); if(catsel) catsel.addEventListener('change',e=>{ curCat=e.target.value; drawExp(); });
     $('a-save').addEventListener('click',()=>{ savedViews.push([cur.nm+' · '+DIMS[curDim],'você']); renderSaved(); toast('Visão salva — aparece no seu catálogo e pode ser compartilhada com a equipe'); });
     $('a-sched').addEventListener('click',()=>toast('Agendado: toda manhã às 07h por e-mail e WhatsApp, já com os filtros desta visão'));
     $('a-csv').addEventListener('click',()=>toast('CSV exportado com os filtros aplicados'));
